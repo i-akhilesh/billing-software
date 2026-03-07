@@ -119,6 +119,8 @@ const Login = () => {
                             )}
                         </button>
 
+                        {/* Registration has been disabled to restrict access */}
+                        {/* 
                         <div className="text-center mt-4">
                             <button
                                 type="button"
@@ -131,7 +133,6 @@ const Login = () => {
                                     const res = await register(email, password);
                                     setIsLoading(false);
                                     if (res.success) {
-                                        // Auto login will happen via onAuthStateChanged, or just redirect
                                         navigate('/');
                                     } else {
                                         setError('Registration failed: ' + res.error);
@@ -141,7 +142,8 @@ const Login = () => {
                             >
                                 Need an account? Sign Up
                             </button>
-                        </div>
+                        </div> 
+                        */}
                     </form>
 
                     <div className="mt-8 pt-6 border-t border-gray-100 dark:border-gray-700">
