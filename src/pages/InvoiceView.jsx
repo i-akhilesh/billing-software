@@ -217,7 +217,7 @@ const InvoiceView = () => {
                             </div>
                             <p className="text-[#4b5563] font-medium"># {invoice.invoiceNumber}</p>
                             <div className="mt-4 text-sm text-[#6b7280]">
-                                <div><span className="font-medium text-[#374151]">Date:</span> {format(new Date(invoice.date), 'MMM dd, yyyy')}</div>
+                                <div><span className="font-medium text-[#374151]">Date:</span> {format(new Date(invoice.date), 'dd-MM-yyyy')}</div>
                             </div>
                         </div>
                     </div>
@@ -268,14 +268,26 @@ const InvoiceView = () => {
                         </tbody>
                     </table>
 
-                    {/* Totals */}
-                    {(() => {
-                        const calculatedSubtotal = invoice.items.reduce((sum, item) => sum + ((parseFloat(item.quantity) || 0) * (parseFloat(item.price) || 0)), 0);
-                        const calculatedTaxTotal = invoice.items.reduce((sum, item) => sum + (((parseFloat(item.quantity) || 0) * (parseFloat(item.price) || 0)) * ((parseFloat(item.taxRate) || 0) / 100)), 0);
-                        const calculatedTotal = calculatedSubtotal + calculatedTaxTotal - (invoice.discount || 0);
+                    {/* Bottom Section: Bank Details and Totals */}
+                    <div className="flex justify-between items-start border-t border-[#e5e7eb] pt-6 mt-8 print:mt-4">
+                        {/* Bank Details on the Left */}
+                        <div className="w-1/2 p-4 bg-[#f9fafb] rounded-md print:bg-transparent print:p-0">
+                            <h4 className="font-bold text-[#1d4ed8] text-sm mb-2">Bank Details:</h4>
+                            <div className="text-[#4b5563] text-xs space-y-1">
+                                <div><span className="font-medium">Bank Name:</span> Bank of Maharashtra</div>
+                                <div><span className="font-medium">Account No.:</span> 60410431900</div>
+                                <div><span className="font-medium">Branch:</span> Hudco, TV Centre</div>
+                                <div><span className="font-medium">IFSC Code:</span> MAHB0001191</div>
+                            </div>
+                        </div>
 
-                        return (
-                            <div className="flex justify-end border-t border-[#e5e7eb] pt-4">
+                        {/* Totals on the Right */}
+                        {(() => {
+                            const calculatedSubtotal = invoice.items.reduce((sum, item) => sum + ((parseFloat(item.quantity) || 0) * (parseFloat(item.price) || 0)), 0);
+                            const calculatedTaxTotal = invoice.items.reduce((sum, item) => sum + (((parseFloat(item.quantity) || 0) * (parseFloat(item.price) || 0)) * ((parseFloat(item.taxRate) || 0) / 100)), 0);
+                            const calculatedTotal = calculatedSubtotal + calculatedTaxTotal - (invoice.discount || 0);
+
+                            return (
                                 <div className="w-72 space-y-2">
                                     <div className="flex justify-between text-sm text-[#4b5563]">
                                         <span className="font-medium">Subtotal:</span>
@@ -300,7 +312,7 @@ const InvoiceView = () => {
                                         Rupees {numberToWords(calculatedTotal)}
                                     </div>
 
-                                    {/* Payment Summary */}
+                                    {/* Payment Summary - Hidden in Print/Download */}
                                     <div className="pt-4 mt-4 border-t border-[#f3f4f6] print:hidden payment-summary-section">
                                         <div className="flex justify-between text-sm text-[#16a34a] font-medium">
                                             <span>Paid:</span>
@@ -312,11 +324,11 @@ const InvoiceView = () => {
                                         </div>
                                     </div>
                                 </div>
-                            </div>
-                        );
-                    })()}
+                            );
+                        })()}
+                    </div>
 
-                    {/* Payment History */}
+                    {/* Payment History - Only on Screen */}
                     {invoice.payments && invoice.payments.length > 0 && (
                         <div className="mt-8 border-t border-gray-100 pt-8 print:hidden">
                             <h3 className="text-lg font-bold text-gray-800 mb-4">Payment History</h3>
@@ -345,19 +357,10 @@ const InvoiceView = () => {
                         </div>
                     )}
 
-                    {/* Notes and Bank Details */}
-                    <div className="mt-12 print:mt-4 flex flex-col md:flex-row justify-between gap-8 print:gap-4 border-t border-[#f3f4f6] pt-8 print:pt-4">
-                        <div className="w-full md:w-1/2 bg-[#f9fafb] p-4 rounded-md">
-                            <h4 className="font-bold text-[#1d4ed8] text-sm mb-2">Bank Details:</h4>
-                            <div className="text-[#4b5563] text-xs space-y-1">
-                                <div><span className="font-medium">Bank Name:</span> Bank of Maharashtra</div>
-                                <div><span className="font-medium">Account No.:</span> 60410431900</div>
-                                <div><span className="font-medium">Branch:</span> Hudco, TV Centre</div>
-                                <div><span className="font-medium">IFSC Code:</span> MAHB0001191</div>
-                            </div>
-                        </div>
-
-                        <div className="w-full md:w-1/2 text-[#6b7280] text-sm">
+                    {/* Final Bottom Section: Terms and Signature */}
+                    <div className="flex justify-between items-end mt-12 print:mt-16">
+                        {/* Terms on the Left */}
+                        <div className="w-1/2 text-[#6b7280] text-sm">
                             <h4 className="font-medium text-[#374151] mb-1">Terms & Conditions:</h4>
                             <ul className="list-disc list-inside space-y-1 text-xs">
                                 <li>Interest will be recovered @24% p.a. on overdue unpaid bills.</li>
@@ -366,9 +369,17 @@ const InvoiceView = () => {
                                 <li>E&OE</li>
                             </ul>
                         </div>
+
+                        {/* Signature on the Right */}
+                        <div className="text-right">
+                            <div className="text-[#1f2937] font-bold text-sm mb-16">Shri Brahmchaitanya Enterprises</div>
+                            <div className="border-t border-gray-400 pt-2 text-[#4b5563] text-sm font-medium inline-block min-w-[200px]">
+                                Authorised Signature
+                            </div>
+                        </div>
                     </div>
                     
-                    <div className="mt-8 print:mt-2 pt-4 print:pt-2 border-t border-[#f3f4f6] text-center text-xs text-[#9ca3af]">
+                    <div className="mt-8 print:mt-4 pt-4 print:pt-2 border-t border-[#f3f4f6] text-center text-xs text-[#9ca3af]">
                         Generated by Brahmchaitanya Billing System
                     </div>
                 </div>

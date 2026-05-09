@@ -41,6 +41,46 @@ const styles = StyleSheet.create({
         fontSize: 10,
         color: '#333333'
     },
+    bottomSection: {
+        flexDirection: 'row',
+        marginTop: 20,
+        borderTopWidth: 1,
+        borderTopColor: '#e5e7eb',
+        paddingTop: 10,
+    },
+    bankDetails: {
+        width: '60%',
+        paddingRight: 20,
+    },
+    totalsBox: {
+        width: '40%',
+    },
+    footerSection: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'flex-end',
+        marginTop: 40,
+    },
+    terms: {
+        width: '60%',
+    },
+    signatureBox: {
+        width: '40%',
+        textAlign: 'right',
+    },
+    signatureLine: {
+        marginTop: 40,
+        borderTopWidth: 1,
+        borderTopColor: '#000',
+        paddingTop: 4,
+        fontWeight: 'bold',
+        fontSize: 10,
+    },
+    signatureCompany: {
+        fontSize: 10,
+        fontWeight: 'bold',
+        marginBottom: 5,
+    },
     header: {
         flexDirection: 'row',
         justifyContent: 'space-between',
@@ -135,16 +175,62 @@ const styles = StyleSheet.create({
     colTax: { width: '15%', textAlign: 'right' },
     colTotal: { width: '20%', textAlign: 'right' },
 
-    totalsSection: {
+    grandTotalText: {
+        fontSize: 14,
+        fontWeight: 'bold',
+        color: '#1d4ed8'
+    },
+    amountInWords: {
+        fontSize: 9,
+        color: '#1d4ed8',
+        fontWeight: 'bold',
+        textAlign: 'right',
+        marginTop: 5,
+        fontStyle: 'italic'
+    },
+    bottomSection: {
         flexDirection: 'row',
-        justifyContent: 'flex-end',
-        marginTop: 10
+        marginTop: 20,
+        borderTopWidth: 1,
+        borderTopColor: '#e5e7eb',
+        paddingTop: 10,
+    },
+    bankDetails: {
+        width: '55%',
+        paddingRight: 20,
     },
     totalsBox: {
-        width: '40%',
+        width: '45%',
         padding: 10,
         backgroundColor: '#F9FAFB',
         borderRadius: 4
+    },
+    footerSection: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'flex-end',
+        marginTop: 40,
+        paddingBottom: 20,
+    },
+    terms: {
+        width: '55%',
+    },
+    signatureBox: {
+        width: '45%',
+        textAlign: 'right',
+    },
+    signatureLine: {
+        marginTop: 50,
+        borderTopWidth: 1,
+        borderTopColor: '#000',
+        paddingTop: 4,
+        fontWeight: 'bold',
+        fontSize: 10,
+    },
+    signatureCompany: {
+        fontSize: 10,
+        fontWeight: 'bold',
+        marginBottom: 5,
     },
     totalRow: {
         flexDirection: 'row',
@@ -159,11 +245,6 @@ const styles = StyleSheet.create({
         paddingTop: 8,
         marginTop: 4
     },
-    grandTotalText: {
-        fontSize: 12,
-        fontWeight: 'bold',
-        color: '#1d4ed8'
-    },
     footer: {
         position: 'absolute',
         bottom: 30,
@@ -176,19 +257,6 @@ const styles = StyleSheet.create({
         borderTopColor: '#EEEEEE',
         paddingTop: 10
     },
-    terms: {
-        marginTop: 5,
-        fontSize: 8,
-        color: '#666666',
-        fontStyle: 'italic'
-    },
-    bankDetails: {
-        marginTop: 5,
-        padding: 10,
-        backgroundColor: '#F9FAFB',
-        borderRadius: 4,
-        width: '100%',
-    },
     bankTitle: {
         fontSize: 10,
         fontWeight: 'bold',
@@ -198,7 +266,7 @@ const styles = StyleSheet.create({
     bankText: {
         fontSize: 9,
         color: '#666',
-        marginBottom: 2,
+        lineHeight: 1.4
     },
     compositionNote: {
         fontSize: 9,
@@ -305,24 +373,14 @@ const InvoicePDF = ({ invoice, customer, items }) => {
                     })}
                 </View>
 
-                {/* Bottom Section */}
+                {/* Row 1: Bank Details and Totals */}
                 <View style={styles.bottomSection}>
-                    <View style={styles.bottomLeft}>
-                        <View style={styles.bankDetails}>
-                            <Text style={styles.bankTitle}>Bank Details:</Text>
-                            <Text style={styles.bankText}>Bank Name: Bank of Maharashtra</Text>
-                            <Text style={styles.bankText}>Account No.: 60410431900</Text>
-                            <Text style={styles.bankText}>Branch: Hudco, TV Centre</Text>
-                            <Text style={styles.bankText}>IFSC Code: MAHB0001191</Text>
-                        </View>
-
-                        <View style={styles.terms}>
-                            <Text style={{ fontWeight: 'bold', marginBottom: 4 }}>Terms & Conditions:</Text>
-                            <Text>1. Interest will be recovered @24% p.a. on overdue unpaid bills.</Text>
-                            <Text>2. Goods once sold cannot be Returned or Exchanged.</Text>
-                            <Text>3. Subject to Chh. Sambhaji Nagar Jurisdiction</Text>
-                            <Text>4. E&OE</Text>
-                        </View>
+                    <View style={styles.bankDetails}>
+                        <Text style={styles.bankTitle}>Bank Details:</Text>
+                        <Text style={styles.bankText}>Bank Name: Bank of Maharashtra</Text>
+                        <Text style={styles.bankText}>Account No.: 60410431900</Text>
+                        <Text style={styles.bankText}>Branch: Hudco, TV Centre</Text>
+                        <Text style={styles.bankText}>IFSC Code: MAHB0001191</Text>
                     </View>
 
                     <View style={styles.totalsBox}>
@@ -347,6 +405,22 @@ const InvoicePDF = ({ invoice, customer, items }) => {
                         <Text style={styles.amountInWords}>
                             Rupees {numberToWords(invoice.total || 0)}
                         </Text>
+                    </View>
+                </View>
+
+                {/* Row 2: Terms and Signature */}
+                <View style={styles.footerSection}>
+                    <View style={styles.terms}>
+                        <Text style={{ fontWeight: 'bold', marginBottom: 4 }}>Terms & Conditions:</Text>
+                        <Text>1. Interest will be recovered @24% p.a. on overdue unpaid bills.</Text>
+                        <Text>2. Goods once sold cannot be Returned or Exchanged.</Text>
+                        <Text>3. Subject to Chh. Sambhaji Nagar Jurisdiction</Text>
+                        <Text>4. E&OE</Text>
+                    </View>
+
+                    <View style={styles.signatureBox}>
+                        <Text style={styles.signatureCompany}>Shri Brahmchaitanya Enterprises</Text>
+                        <Text style={styles.signatureLine}>Authorised Signature</Text>
                     </View>
                 </View>
 
