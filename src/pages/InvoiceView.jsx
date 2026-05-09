@@ -286,10 +286,7 @@ const InvoiceView = () => {
 
                             return (
                                 <div className="w-72 space-y-2">
-                                    <div className="flex justify-between text-sm text-[#4b5563]">
-                                        <span className="font-medium">Subtotal:</span>
-                                        <span>₹{calculatedSubtotal.toFixed(2)}</span>
-                                    </div>
+                                    {/* Subtotal removed */}
                                     {invoice.discount > 0 && (
                                         <div className="flex justify-between text-sm text-[#4b5563]">
                                             <span className="font-medium">Discount:</span>

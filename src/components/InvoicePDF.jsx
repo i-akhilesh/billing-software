@@ -93,11 +93,11 @@ const styles = StyleSheet.create({
         width: '60%'
     },
     companyName: {
-        fontSize: 20,
+        fontSize: 18,
         fontWeight: 'bold',
         color: '#1d4ed8', // blue-700
         textTransform: 'uppercase',
-        marginBottom: 5
+        marginBottom: 2
     },
     companyAddress: {
         fontSize: 9,
@@ -131,9 +131,9 @@ const styles = StyleSheet.create({
         textAlign: 'right'
     },
     billTo: {
-        marginTop: 10,
-        marginBottom: 10,
-        padding: 10,
+        marginTop: 5,
+        marginBottom: 5,
+        padding: 8,
         backgroundColor: '#F9FAFB',
         borderRadius: 4
     },
@@ -141,7 +141,7 @@ const styles = StyleSheet.create({
         fontSize: 12,
         fontWeight: 'bold',
         color: '#1d4ed8',
-        marginBottom: 8,
+        marginBottom: 4,
         textTransform: 'uppercase'
     },
     customerName: {
@@ -187,10 +187,10 @@ const styles = StyleSheet.create({
     },
     bottomSection: {
         flexDirection: 'row',
-        marginTop: 20,
+        marginTop: 10,
         borderTopWidth: 1,
         borderTopColor: '#e5e7eb',
-        paddingTop: 10,
+        paddingTop: 5,
     },
     bankDetails: {
         width: '55%',
@@ -206,8 +206,8 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'flex-end',
-        marginTop: 40,
-        paddingBottom: 20,
+        marginTop: 20,
+        paddingBottom: 10,
     },
     terms: {
         width: '55%',
@@ -378,10 +378,7 @@ const InvoicePDF = ({ invoice, customer, items }) => {
                     </View>
 
                     <View style={styles.totalsBox}>
-                        <View style={styles.totalRow}>
-                            <Text>Subtotal:</Text>
-                            <Text>₹{invoice.subtotal?.toFixed(2) || '0.00'}</Text>
-                        </View>
+                        {/* Subtotal removed */}
                         {invoice.discount > 0 && (
                             <View style={styles.totalRow}>
                                 <Text>Discount:</Text>
