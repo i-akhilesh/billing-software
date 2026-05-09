@@ -320,6 +320,8 @@ const InvoicePDF = ({ invoice, customer, items }) => {
                             <Text style={{ fontWeight: 'bold', marginBottom: 4 }}>Terms & Conditions:</Text>
                             <Text>1. Interest will be recovered @24% p.a. on overdue unpaid bills.</Text>
                             <Text>2. Goods once sold cannot be Returned or Exchanged.</Text>
+                            <Text>3. Subject to Chh. Sambhaji Nagar Jurisdiction</Text>
+                            <Text>4. E&OE</Text>
                         </View>
                     </View>
 
