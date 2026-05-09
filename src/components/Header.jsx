@@ -17,7 +17,7 @@ const Header = () => {
             {/* Centered Title */}
             <div className="absolute left-1/2 transform -translate-x-1/2">
                 <h1 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent sm:text-2xl whitespace-nowrap">
-                    Shri Bramachaitanya Enterprises
+                    Shri Brahmchaitanya Enterprises
                 </h1>
             </div>
 

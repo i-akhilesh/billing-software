@@ -54,7 +54,7 @@ const Login = () => {
                         <h2 className="text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 dark:from-white dark:to-gray-300 bg-clip-text text-transparent mb-2">
                             Welcome Back
                         </h2>
-                        <p className="text-gray-500 dark:text-gray-400 font-medium">Shri Bramachaitanya Enterprises</p>
+                        <p className="text-gray-500 dark:text-gray-400 font-medium">Shri Brahmchaitanya Enterprises</p>
                     </div>
 
                     {error && (
@@ -148,7 +148,7 @@ const Login = () => {
 
                     <div className="mt-8 pt-6 border-t border-gray-100 dark:border-gray-700">
                         <p className="text-center text-xs text-gray-400 dark:text-gray-500">
-                            © {new Date().getFullYear()} Shri Bramachaitanya Enterprises. All rights reserved.
+                            © {new Date().getFullYear()} Shri Brahmchaitanya Enterprises. All rights reserved.
                         </p>
                     </div>
                 </div>
