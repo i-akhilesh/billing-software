@@ -94,6 +94,32 @@ const ItemModal = ({ isOpen, onClose, onSuccess }) => {
                             </div>
                         </div>
 
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Current Stock</label>
+                                <input
+                                    {...register('stock', {
+                                        min: { value: 0, message: 'Stock must be positive' }
+                                    })}
+                                    type="number"
+                                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                                    placeholder="0"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Low Stock Alert Level</label>
+                                <input
+                                    {...register('minStock', {
+                                        min: { value: 0, message: 'Must be positive' }
+                                    })}
+                                    type="number"
+                                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                                    placeholder="5"
+                                />
+                            </div>
+                        </div>
+
                         <div>
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description</label>
                             <textarea
@@ -104,7 +130,16 @@ const ItemModal = ({ isOpen, onClose, onSuccess }) => {
                             ></textarea>
                         </div>
 
-                        <input type="hidden" {...register('status')} />
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Status</label>
+                            <select
+                                {...register('status')}
+                                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                            >
+                                <option value="active">Active</option>
+                                <option value="inactive">Inactive</option>
+                            </select>
+                        </div>
 
                         <div className="flex justify-end gap-3 pt-4 border-t border-gray-100 dark:border-gray-700">
                             <button

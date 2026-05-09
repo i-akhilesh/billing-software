@@ -1,6 +1,20 @@
 import { Document, Page, Text, View, StyleSheet, Font } from '@react-pdf/renderer';
 import { format } from 'date-fns';
 
+const numberToWords = (num) => {
+    const a = ['', 'One ', 'Two ', 'Three ', 'Four ', 'Five ', 'Six ', 'Seven ', 'Eight ', 'Nine ', 'Ten ', 'Eleven ', 'Twelve ', 'Thirteen ', 'Fourteen ', 'Fifteen ', 'Sixteen ', 'Seventeen ', 'Eighteen ', 'Nineteen '];
+    const b = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
+    const n = ('000000000' + Math.floor(num)).substr(-9).match(/^(\d{2})(\d{2})(\d{2})(\d{1})(\d{2})$/);
+    if (!n) return '';
+    let str = '';
+    str += (n[1] != 0) ? (a[Number(n[1])] || b[n[1][0]] + ' ' + a[n[1][1]]) + 'Crore ' : '';
+    str += (n[2] != 0) ? (a[Number(n[2])] || b[n[2][0]] + ' ' + a[n[2][1]]) + 'Lakh ' : '';
+    str += (n[3] != 0) ? (a[Number(n[3])] || b[n[3][0]] + ' ' + a[n[3][1]]) + 'Thousand ' : '';
+    str += (n[4] != 0) ? (a[Number(n[4])] || b[n[4][0]] + ' ' + a[n[4][1]]) + 'Hundred ' : '';
+    str += (n[5] != 0) ? ((str != '') ? 'and ' : '') + (a[Number(n[5])] || b[n[5][0]] + ' ' + a[n[5][1]]) + 'Only' : '';
+    return str === '' ? 'Zero Only' : str.trim();
+};
+
 // Create styles
 const styles = StyleSheet.create({
     page: {
@@ -147,10 +161,49 @@ const styles = StyleSheet.create({
         paddingTop: 10
     },
     terms: {
-        marginTop: 40,
+        marginTop: 10,
         fontSize: 8,
         color: '#666666',
         fontStyle: 'italic'
+    },
+    bankDetails: {
+        marginTop: 10,
+        padding: 10,
+        backgroundColor: '#F9FAFB',
+        borderRadius: 4,
+        width: '100%',
+    },
+    bankTitle: {
+        fontSize: 10,
+        fontWeight: 'bold',
+        color: '#1d4ed8',
+        marginBottom: 4,
+    },
+    bankText: {
+        fontSize: 9,
+        color: '#666',
+        marginBottom: 2,
+    },
+    compositionNote: {
+        fontSize: 9,
+        color: '#d97706',
+        marginTop: 4,
+        fontStyle: 'italic',
+        maxWidth: 200,
+    },
+    amountInWords: {
+        marginTop: 10,
+        fontSize: 10,
+        fontWeight: 'bold',
+        color: '#1d4ed8'
+    },
+    bottomSection: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        marginTop: 20,
+    },
+    bottomLeft: {
+        width: '50%',
     }
 });
 
@@ -168,14 +221,21 @@ const InvoicePDF = ({ invoice, customer, items }) => {
                     <View style={styles.companyDetails}>
                         <Text style={styles.companyName}>Shri Bramachaitanya Enterprises</Text>
                         <Text style={styles.companyAddress}>
-                            123, Business Park, Industrial Area{"\n"}
-                            Pune, Maharashtra, 411001{"\n"}
-                            GSTIN: 27ABCDE1234F1Z5{"\n"}
-                            Phone: +91 98765 43210
+                            N-11, B 19/4, Subhashchandra Bose Nagar,{"\n"}
+                            Hudco, Chh. Sambhaji Nagar, 431003{"\n"}
+                            GSTIN: 27AWRPP6364M1ZI{"\n"}
+                            Unique Code: VAMHAU00097869{"\n"}
+                            Phone: +91 81809 19544
                         </Text>
                     </View>
                     <View style={styles.invoiceDetails}>
                         <Text style={styles.title}>INVOICE</Text>
+                        <Text style={{ fontSize: 12, fontWeight: 'bold', color: '#1d4ed8', marginBottom: 2, textAlign: 'right' }}>
+                            Composition Scheme
+                        </Text>
+                        <Text style={{ fontSize: 8, color: '#d97706', marginBottom: 10, textAlign: 'right', fontStyle: 'italic', maxWidth: 150 }}>
+                            Composition dealer is not eligible to collect tax on supply
+                        </Text>
                         <View style={styles.detailRow}>
                             <Text style={styles.detailLabel}>Invoice #:</Text>
                             <Text style={styles.detailValue}>{invoice.invoiceNumber}</Text>
@@ -234,8 +294,24 @@ const InvoicePDF = ({ invoice, customer, items }) => {
                     })}
                 </View>
 
-                {/* Totals */}
-                <View style={styles.totalsSection}>
+                {/* Bottom Section */}
+                <View style={styles.bottomSection}>
+                    <View style={styles.bottomLeft}>
+                        <View style={styles.bankDetails}>
+                            <Text style={styles.bankTitle}>Bank Details:</Text>
+                            <Text style={styles.bankText}>Bank Name: Bank of Maharashtra</Text>
+                            <Text style={styles.bankText}>Account No.: 60410431900</Text>
+                            <Text style={styles.bankText}>Branch: Hudco, TV Centre</Text>
+                            <Text style={styles.bankText}>IFSC Code: MAHB0001191</Text>
+                        </View>
+
+                        <View style={styles.terms}>
+                            <Text style={{ fontWeight: 'bold', marginBottom: 4 }}>Terms & Conditions:</Text>
+                            <Text>1. Interest will be recovered @24% p.a. on overdue unpaid bills.</Text>
+                            <Text>2. Goods once sold cannot be Returned or Exchanged.</Text>
+                        </View>
+                    </View>
+
                     <View style={styles.totalsBox}>
                         <View style={styles.totalRow}>
                             <Text>Subtotal:</Text>
@@ -255,15 +331,10 @@ const InvoicePDF = ({ invoice, customer, items }) => {
                             <Text style={styles.grandTotalText}>Total:</Text>
                             <Text style={styles.grandTotalText}>₹{invoice.total?.toFixed(2) || '0.00'}</Text>
                         </View>
+                        <Text style={styles.amountInWords}>
+                            Rupees {numberToWords(invoice.total || 0)}
+                        </Text>
                     </View>
-                </View>
-
-                {/* Terms & Footer */}
-                <View style={styles.terms}>
-                    <Text style={{ fontWeight: 'bold', marginBottom: 4 }}>Terms & Conditions:</Text>
-                    <Text>1. Goods once sold will not be taken back.</Text>
-                    <Text>2. Interest @ 18% p.a. will be charged on overdue payments.</Text>
-                    <Text>3. Subject to local jurisdiction.</Text>
                 </View>
 
                 <View style={styles.footer}>
