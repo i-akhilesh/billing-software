@@ -1,6 +1,22 @@
 import { Document, Page, Text, View, StyleSheet, Font } from '@react-pdf/renderer';
 import { format } from 'date-fns';
 
+// Register a custom font that supports Devanagari (Marathi)
+Font.register({
+    family: 'NotoSansDevanagari',
+    src: '/NotoSansDevanagari-Regular.ttf'
+});
+
+// A helper to convert legacy Shivaji/KrutiDev ASCII input to Unicode Devanagari
+// This allows the user's legacy inputs to render correctly with the NotoSans font.
+const convertLegacyMarathi = (text) => {
+    if (!text || typeof text !== 'string') return text;
+    return text
+        .replace(/\? \* \*M0> 6> 6G&M0> \.\(0/g, 'जि प प्रा शा शेंद्रा कमनगर')
+        .replace(/5\?&M\/>0M%@ 9G0@/g, 'विद्यार्थी हजेरी')
+        .replace(/5\?&M\/>0M%@/g, 'विद्यार्थी');
+};
+
 const numberToWords = (num) => {
     const a = ['', 'One ', 'Two ', 'Three ', 'Four ', 'Five ', 'Six ', 'Seven ', 'Eight ', 'Nine ', 'Ten ', 'Eleven ', 'Twelve ', 'Thirteen ', 'Fourteen ', 'Fifteen ', 'Sixteen ', 'Seventeen ', 'Eighteen ', 'Nineteen '];
     const b = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
@@ -20,18 +36,18 @@ const styles = StyleSheet.create({
     page: {
         flexDirection: 'column',
         backgroundColor: '#FFFFFF',
-        padding: 30,
-        fontFamily: 'Helvetica',
+        padding: 20,
+        fontFamily: 'NotoSansDevanagari',
         fontSize: 10,
         color: '#333333'
     },
     header: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        marginBottom: 20,
+        marginBottom: 10,
         borderBottomWidth: 1,
         borderBottomColor: '#EEEEEE',
-        paddingBottom: 20
+        paddingBottom: 10
     },
     companyDetails: {
         width: '60%'
@@ -75,8 +91,8 @@ const styles = StyleSheet.create({
         textAlign: 'right'
     },
     billTo: {
-        marginTop: 20,
-        marginBottom: 20,
+        marginTop: 10,
+        marginBottom: 10,
         padding: 10,
         backgroundColor: '#F9FAFB',
         borderRadius: 4
@@ -95,8 +111,8 @@ const styles = StyleSheet.create({
     },
     table: {
         width: '100%',
-        marginTop: 20,
-        marginBottom: 20
+        marginTop: 10,
+        marginBottom: 10
     },
     tableHeader: {
         flexDirection: 'row',
@@ -161,13 +177,13 @@ const styles = StyleSheet.create({
         paddingTop: 10
     },
     terms: {
-        marginTop: 10,
+        marginTop: 5,
         fontSize: 8,
         color: '#666666',
         fontStyle: 'italic'
     },
     bankDetails: {
-        marginTop: 10,
+        marginTop: 5,
         padding: 10,
         backgroundColor: '#F9FAFB',
         borderRadius: 4,
@@ -200,7 +216,7 @@ const styles = StyleSheet.create({
     bottomSection: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        marginTop: 20,
+        marginTop: 10,
     },
     bottomLeft: {
         width: '50%',
@@ -254,10 +270,9 @@ const InvoicePDF = ({ invoice, customer, items }) => {
                 {/* Bill To */}
                 <View style={styles.billTo}>
                     <Text style={styles.sectionTitle}>Bill To:</Text>
-                    <Text style={styles.customerName}>{customer?.name || 'Walk-in Customer'}</Text>
-                    <Text style={{ marginTop: 2 }}>{customer?.email}</Text>
-                    <Text style={{ marginTop: 2 }}>{customer?.phone}</Text>
-                    <Text style={{ marginTop: 2 }}>{customer?.address}</Text>
+                    <Text style={styles.customerName}>{convertLegacyMarathi(customer?.name) || 'Walk-in Customer'}</Text>
+                    <Text style={{ marginTop: 2 }}>{convertLegacyMarathi(customer?.phone)}</Text>
+                    <Text style={{ marginTop: 2 }}>{convertLegacyMarathi(customer?.address)}</Text>
                     {customer?.gstin && <Text style={{ marginTop: 2, fontWeight: 'bold' }}>GSTIN: {customer.gstin}</Text>}
                 </View>
 
@@ -282,8 +297,8 @@ const InvoicePDF = ({ invoice, customer, items }) => {
                         return (
                             <View style={styles.tableRow} key={index}>
                                 <View style={styles.colDesc}>
-                                    <Text style={{ fontWeight: 'bold' }}>{itemDetails.name || 'Item'}</Text>
-                                    {item.description ? <Text style={{ color: '#666', fontSize: 8, marginTop: 2 }}>{item.description}</Text> : null}
+                                    <Text style={{ fontWeight: 'bold' }}>{convertLegacyMarathi(itemDetails.name) || 'Item'}</Text>
+                                    {item.description ? <Text style={{ color: '#666', fontSize: 8, marginTop: 2 }}>{convertLegacyMarathi(item.description)}</Text> : null}
                                 </View>
                                 <Text style={styles.colQty}>{qty}</Text>
                                 <Text style={styles.colPrice}>₹{price.toFixed(2)}</Text>

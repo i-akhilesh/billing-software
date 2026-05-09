@@ -1,2 +1,12 @@
 @import "tailwindcss";
 @custom-variant dark (&:where(.dark, .dark *));
+
+@media print {
+  @page {
+    margin: 0;
+  }
+  body {
+    margin: 0;
+    padding: 1cm;
+  }
+}

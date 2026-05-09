@@ -69,10 +69,9 @@ const CustomerForm = () => {
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Email Address (Optional)</label>
                             <input
                                 {...register('email', {
-                                    required: 'Email is required',
                                     pattern: {
                                         value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
                                         message: "Invalid email address"
