@@ -239,11 +239,10 @@ const InvoiceView = () => {
                                 <th className="px-4 py-3">Item</th>
                                 <th className="px-4 py-3 text-center">Qty</th>
                                 <th className="px-4 py-3 text-right">Price</th>
-                                <th className="px-4 py-3 text-right">Tax</th>
                                 <th className="px-4 py-3 text-right">Amount</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-[#f3f4f6]">
+                        <tbody className="">
                             {invoice.items.map((item, index) => {
                                 const originalItem = items.find(i => i.id === item.itemId);
                                 const itemName = originalItem ? originalItem.name : (item.name || 'Unknown Item');
@@ -252,14 +251,12 @@ const InvoiceView = () => {
 
                                 return (
                                     <tr key={index}>
-                                        <td className="px-4 py-3">
+                                        <td className="px-4 py-1.5">
                                             <div className="font-medium text-[#1f2937]">{itemName}</div>
-                                            {item.description && <div className="text-xs text-[#6b7280]">{item.description}</div>}
                                         </td>
-                                        <td className="px-4 py-3 text-center">{item.quantity}</td>
-                                        <td className="px-4 py-3 text-right">₹{parseFloat(item.price).toFixed(2)}</td>
-                                        <td className="px-4 py-3 text-right">₹{itemTax.toFixed(2)} <span className="text-xs text-[#9ca3af]">({item.taxRate}%)</span></td>
-                                        <td className="px-4 py-3 text-right font-medium text-[#111827]">
+                                        <td className="px-4 py-1.5 text-center">{item.quantity}</td>
+                                        <td className="px-4 py-1.5 text-right">₹{parseFloat(item.price).toFixed(2)}</td>
+                                        <td className="px-4 py-1.5 text-right font-medium text-[#111827]">
                                             ₹{(itemTotal).toFixed(2)}
                                         </td>
                                     </tr>
@@ -292,10 +289,6 @@ const InvoiceView = () => {
                                     <div className="flex justify-between text-sm text-[#4b5563]">
                                         <span className="font-medium">Subtotal:</span>
                                         <span>₹{calculatedSubtotal.toFixed(2)}</span>
-                                    </div>
-                                    <div className="flex justify-between text-sm text-[#4b5563]">
-                                        <span className="font-medium">Tax:</span>
-                                        <span>₹{calculatedTaxTotal.toFixed(2)}</span>
                                     </div>
                                     {invoice.discount > 0 && (
                                         <div className="flex justify-between text-sm text-[#4b5563]">

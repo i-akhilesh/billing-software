@@ -164,15 +164,12 @@ const styles = StyleSheet.create({
     },
     tableRow: {
         flexDirection: 'row',
-        borderBottomWidth: 1,
-        borderBottomColor: '#EEEEEE',
-        padding: 8,
+        padding: 4,
         fontSize: 9
     },
-    colDesc: { width: '40%' },
+    colDesc: { width: '50%' },
     colQty: { width: '10%', textAlign: 'center' },
-    colPrice: { width: '15%', textAlign: 'right' },
-    colTax: { width: '15%', textAlign: 'right' },
+    colPrice: { width: '20%', textAlign: 'right' },
     colTotal: { width: '20%', textAlign: 'right' },
 
     grandTotalText: {
@@ -346,7 +343,6 @@ const InvoicePDF = ({ invoice, customer, items }) => {
                         <Text style={styles.colDesc}>Item Description</Text>
                         <Text style={styles.colQty}>Qty</Text>
                         <Text style={styles.colPrice}>Price</Text>
-                        <Text style={styles.colTax}>Tax</Text>
                         <Text style={styles.colTotal}>Amount</Text>
                     </View>
 
@@ -362,11 +358,9 @@ const InvoicePDF = ({ invoice, customer, items }) => {
                             <View style={styles.tableRow} key={index}>
                                 <View style={styles.colDesc}>
                                     <Text style={{ fontWeight: 'bold' }}>{convertLegacyMarathi(itemDetails.name) || 'Item'}</Text>
-                                    {item.description ? <Text style={{ color: '#666', fontSize: 8, marginTop: 2 }}>{convertLegacyMarathi(item.description)}</Text> : null}
                                 </View>
                                 <Text style={styles.colQty}>{qty}</Text>
                                 <Text style={styles.colPrice}>₹{price.toFixed(2)}</Text>
-                                <Text style={styles.colTax}>{taxRate}%</Text>
                                 <Text style={styles.colTotal}>₹{amount.toFixed(2)}</Text>
                             </View>
                         );
@@ -387,10 +381,6 @@ const InvoicePDF = ({ invoice, customer, items }) => {
                         <View style={styles.totalRow}>
                             <Text>Subtotal:</Text>
                             <Text>₹{invoice.subtotal?.toFixed(2) || '0.00'}</Text>
-                        </View>
-                        <View style={styles.totalRow}>
-                            <Text>Tax Total:</Text>
-                            <Text>₹{invoice.taxTotal?.toFixed(2) || '0.00'}</Text>
                         </View>
                         {invoice.discount > 0 && (
                             <View style={styles.totalRow}>

@@ -251,10 +251,9 @@ const InvoiceForm = () => {
                             <table className="w-full text-left text-sm text-gray-600 dark:text-gray-300">
                                 <thead className="bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-200 font-medium">
                                     <tr>
-                                        <th className="px-4 py-2 w-1/3">Item Details</th>
+                                        <th className="px-4 py-2 w-1/3">Item Name</th>
                                         <th className="px-4 py-2 w-24">Qty</th>
                                         <th className="px-4 py-2 w-32">Price</th>
-                                        <th className="px-4 py-2 w-24">Tax (%)</th>
                                         <th className="px-4 py-2 w-32 text-right">Amount</th>
                                         <th className="px-4 py-2 w-10"></th>
                                     </tr>
@@ -286,12 +285,6 @@ const InvoiceForm = () => {
                                                         )}
                                                     />
                                                 </div>
-                                                <textarea
-                                                    {...register(`items.${index}.description`)}
-                                                    placeholder="Description"
-                                                    rows="1"
-                                                    className="w-full px-2 py-1 border border-gray-300 dark:border-gray-600 rounded text-xs bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                                                ></textarea>
                                             </td>
                                             <td className="px-4 py-2 align-top">
                                                 <input
@@ -322,13 +315,7 @@ const InvoiceForm = () => {
                                                     className="w-full px-2 py-1 border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                                                 />
                                             </td>
-                                            <td className="px-4 py-2 align-top">
-                                                <input
-                                                    {...register(`items.${index}.taxRate`)}
-                                                    type="number"
-                                                    className="w-full px-2 py-1 border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                                                />
-                                            </td>
+                                    {/* Tax field removed */}
                                             <td className="px-4 py-2 align-top text-right font-medium text-gray-800 dark:text-white">
                                                 ₹{((parseFloat(watchItems[index]?.quantity) || 0) * (parseFloat(watchItems[index]?.price) || 0)).toFixed(2)}
                                             </td>
@@ -349,7 +336,7 @@ const InvoiceForm = () => {
                         </div>
                         <button
                             type="button"
-                            onClick={() => append({ itemId: '', quantity: 1, price: 0, taxRate: 0, total: 0 })}
+                            onClick={() => append({ itemId: '', quantity: 1, price: 0, taxRate: 0, total: 0, description: '' })}
                             className="mt-4 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 flex items-center gap-1 text-sm font-medium"
                         >
                             <Plus className="h-4 w-4" />
@@ -363,10 +350,7 @@ const InvoiceForm = () => {
                                 <span>Subtotal</span>
                                 <span>₹{totals.subtotal.toFixed(2)}</span>
                             </div>
-                            <div className="flex justify-between text-sm text-gray-600 dark:text-gray-400">
-                                <span>Tax</span>
-                                <span>₹{totals.taxTotal.toFixed(2)}</span>
-                            </div>
+                            {/* Tax summary removed */}
                             <div className="flex justify-between items-center text-sm text-gray-600 dark:text-gray-400">
                                 <span>Discount</span>
                                 <input
