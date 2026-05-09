@@ -68,6 +68,13 @@ const InvoiceView = () => {
                     const el = clonedDoc.getElementById('invoice-content');
                     if (el) {
                         el.style.boxShadow = 'none';
+                        
+                        // Hide the payment summary section in the PDF download
+                        const paymentSummary = el.querySelector('.payment-summary-section');
+                        if (paymentSummary) {
+                            paymentSummary.style.display = 'none';
+                        }
+
                         // Force override all color variables to avoid oklch crash
                         const style = clonedDoc.createElement('style');
                         style.innerHTML = `
@@ -211,7 +218,6 @@ const InvoiceView = () => {
                             <p className="text-[#4b5563] font-medium"># {invoice.invoiceNumber}</p>
                             <div className="mt-4 text-sm text-[#6b7280]">
                                 <div><span className="font-medium text-[#374151]">Date:</span> {format(new Date(invoice.date), 'MMM dd, yyyy')}</div>
-                                <div><span className="font-medium text-[#374151]">Due Date:</span> {format(new Date(invoice.dueDate), 'MMM dd, yyyy')}</div>
                             </div>
                         </div>
                     </div>
@@ -295,7 +301,7 @@ const InvoiceView = () => {
                                     </div>
 
                                     {/* Payment Summary */}
-                                    <div className="pt-4 mt-4 border-t border-[#f3f4f6]">
+                                    <div className="pt-4 mt-4 border-t border-[#f3f4f6] print:hidden payment-summary-section">
                                         <div className="flex justify-between text-sm text-[#16a34a] font-medium">
                                             <span>Paid:</span>
                                             <span>₹{totalPaid.toFixed(2)}</span>

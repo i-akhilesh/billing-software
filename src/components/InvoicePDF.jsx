@@ -260,10 +260,6 @@ const InvoicePDF = ({ invoice, customer, items }) => {
                             <Text style={styles.detailLabel}>Date:</Text>
                             <Text style={styles.detailValue}>{format(new Date(invoice.date), 'dd MMM yyyy')}</Text>
                         </View>
-                        <View style={styles.detailRow}>
-                            <Text style={styles.detailLabel}>Due Date:</Text>
-                            <Text style={styles.detailValue}>{format(new Date(invoice.dueDate), 'dd MMM yyyy')}</Text>
-                        </View>
                     </View>
                 </View>
 
