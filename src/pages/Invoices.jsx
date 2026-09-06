@@ -2,15 +2,16 @@ import { useState } from 'react';
 import { useData } from '../context/DataContext';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
-import { Link } from 'react-router-dom';
-import { Plus, Search, Edit2, Trash2, FileText, Eye } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Plus, Search, Edit2, Trash2, FileText, Eye, Layers } from 'lucide-react';
 import { format } from 'date-fns';
 import InvoiceStats from '../components/InvoiceStats';
 
 const Invoices = () => {
-    const { invoices, customers, deleteInvoice, updateInvoice, loading } = useData();
+    const { invoices, customers, deleteInvoice, updateInvoice, addQuotation, loading } = useData();
     const { user } = useAuth();
     const { addToast } = useToast();
+    const navigate = useNavigate();
     const [searchTerm, setSearchTerm] = useState('');
     const [filterStatus, setFilterStatus] = useState('All');
 
@@ -155,15 +156,42 @@ const Invoices = () => {
                                                 >
                                                     <Edit2 className="h-4 w-4" />
                                                 </Link>
-                                                {(user?.role === 'admin' || user?.email === 'admin@gmail.com') && (
-                                                    <button
-                                                        onClick={() => handleDelete(inv.id)}
-                                                        className="p-1 text-red-600 hover:bg-red-50 rounded"
-                                                        title="Delete"
-                                                    >
-                                                        <Trash2 className="h-4 w-4" />
-                                                    </button>
-                                                )}
+                                                <button
+                                                    onClick={async () => {
+                                                        try {
+                                                            const created = await addQuotation({
+                                                                quotationNumber: `QT-${Date.now().toString().slice(-4)}`,
+                                                                date: new Date().toISOString(),
+                                                                validUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+                                                                customerId: inv.customerId || '',
+                                                                customerName: getCustomerName(inv.customerId),
+                                                                items: inv.items || [],
+                                                                subtotal: inv.subtotal || 0,
+                                                                discount: inv.discount || 0,
+                                                                taxTotal: inv.taxTotal || 0,
+                                                                total: inv.total || 0,
+                                                                status: 'Active',
+                                                                notes: `Converted from Invoice ${inv.invoiceNumber}`
+                                                            });
+                                                            addToast('Converted to 3 Quotations set!', 'success');
+                                                            navigate(`/quotations/${created.id}`);
+                                                        } catch (err) {
+                                                            console.error(err);
+                                                            addToast('Failed to create quotation', 'error');
+                                                        }
+                                                    }}
+                                                    className="p-1 text-purple-600 hover:bg-purple-50 rounded flex items-center gap-1"
+                                                    title="Generate 3 Quotations"
+                                                >
+                                                    <Layers className="h-4 w-4" />
+                                                </button>
+                                                <button
+                                                    onClick={() => handleDelete(inv.id)}
+                                                    className="p-1 text-red-600 hover:bg-red-50 rounded"
+                                                    title="Delete"
+                                                >
+                                                    <Trash2 className="h-4 w-4" />
+                                                </button>
                                             </div>
                                         </td>
                                     </tr>

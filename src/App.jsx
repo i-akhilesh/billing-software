@@ -15,6 +15,9 @@ import ItemForm from './pages/ItemForm';
 import Invoices from './pages/Invoices';
 import InvoiceForm from './pages/InvoiceForm';
 import InvoiceView from './pages/InvoiceView';
+import Quotations from './pages/Quotations';
+import QuotationForm from './pages/QuotationForm';
+import QuotationView from './pages/QuotationView';
 import Layout from './components/Layout';
 
 function App() {
@@ -45,6 +48,10 @@ function App() {
                                     <Route path="/invoices/new" element={<InvoiceForm />} />
                                     <Route path="/invoices/:id" element={<InvoiceView />} />
                                     <Route path="/invoices/:id/edit" element={<InvoiceForm />} />
+                                    <Route path="/quotations" element={<Quotations />} />
+                                    <Route path="/quotations/new" element={<QuotationForm />} />
+                                    <Route path="/quotations/:id" element={<QuotationView />} />
+                                    <Route path="/quotations/:id/edit" element={<QuotationForm />} />
                                 </Route>
                             </Routes>
                         </Router>

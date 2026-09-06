@@ -18,6 +18,7 @@ const COLLECTIONS = {
     CUSTOMERS: 'customers',
     ITEMS: 'items',
     INVOICES: 'invoices',
+    QUOTATIONS: 'quotations',
     COUNTERS: 'counters' // New collection for tracking IDs
 };
 
@@ -245,6 +246,56 @@ const dbService = {
             return { ...invoice, id: invoiceId, payments, status };
         } catch (error) {
             console.error("Error adding payment:", error);
+            throw error;
+        }
+    },
+
+    // --- Quotations ---
+    getQuotations: async () => {
+        try {
+            const q = query(collection(db, COLLECTIONS.QUOTATIONS), orderBy('date', 'desc'));
+            const snapshot = await getDocs(q);
+            return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        } catch (error) {
+            console.error("Error getting quotations:", error);
+            return [];
+        }
+    },
+
+    createQuotation: async (data) => {
+        try {
+            const newId = await generateNextId(COLLECTIONS.QUOTATIONS, 'QT-');
+            const docRef = doc(db, COLLECTIONS.QUOTATIONS, newId);
+            const quotationData = {
+                ...data,
+                id: newId,
+                quotationNumber: data.quotationNumber || newId
+            };
+            await setDoc(docRef, quotationData);
+            return quotationData;
+        } catch (error) {
+            console.error("Error creating quotation:", error);
+            throw error;
+        }
+    },
+
+    updateQuotation: async (id, data) => {
+        try {
+            const docRef = doc(db, COLLECTIONS.QUOTATIONS, id);
+            await updateDoc(docRef, data);
+            return { id, ...data };
+        } catch (error) {
+            console.error("Error updating quotation:", error);
+            throw error;
+        }
+    },
+
+    deleteQuotation: async (id) => {
+        try {
+            await deleteDoc(doc(db, COLLECTIONS.QUOTATIONS, id));
+            return true;
+        } catch (error) {
+            console.error("Error deleting quotation:", error);
             throw error;
         }
     }

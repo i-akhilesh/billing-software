@@ -11,20 +11,23 @@ export const DataProvider = ({ children }) => {
     const [customers, setCustomers] = useState([]);
     const [items, setItems] = useState([]);
     const [invoices, setInvoices] = useState([]);
+    const [quotations, setQuotations] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
     const refreshData = useCallback(async () => {
         setLoading(true);
         try {
-            const [customersData, itemsData, invoicesData] = await Promise.all([
+            const [customersData, itemsData, invoicesData, quotationsData] = await Promise.all([
                 dbService.getCustomers(),
                 dbService.getItems(),
-                dbService.getInvoices()
+                dbService.getInvoices(),
+                dbService.getQuotations()
             ]);
             setCustomers(customersData || []);
             setItems(itemsData || []);
             setInvoices(invoicesData || []);
+            setQuotations(quotationsData || []);
             setError(null);
         } catch (err) {
             console.error('Error fetching data:', err);
@@ -147,10 +150,44 @@ export const DataProvider = ({ children }) => {
         }
     };
 
+    // --- Quotations ---
+    const addQuotation = async (data) => {
+        try {
+            const newQuotation = await dbService.createQuotation(data);
+            setQuotations(prev => [newQuotation, ...prev]);
+            return newQuotation;
+        } catch (err) {
+            console.error(err);
+            throw err;
+        }
+    };
+
+    const updateQuotation = async (id, data) => {
+        try {
+            const updated = await dbService.updateQuotation(id, data);
+            setQuotations(prev => prev.map(q => q.id === id ? { ...q, ...updated } : q));
+            return updated;
+        } catch (err) {
+            console.error(err);
+            throw err;
+        }
+    };
+
+    const deleteQuotation = async (id) => {
+        try {
+            await dbService.deleteQuotation(id);
+            setQuotations(prev => prev.filter(q => q.id !== id));
+        } catch (err) {
+            console.error(err);
+            throw err;
+        }
+    };
+
     const value = {
         customers,
         items,
         invoices,
+        quotations,
         loading,
         error,
         refreshData,
@@ -164,7 +201,10 @@ export const DataProvider = ({ children }) => {
         addInvoice,
         updateInvoice,
         deleteInvoice,
-        addPayment
+        addPayment,
+        addQuotation,
+        updateQuotation,
+        deleteQuotation
     };
 
     return (
