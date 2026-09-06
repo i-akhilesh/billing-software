@@ -52,12 +52,12 @@ const QuotationView = () => {
             id: 'store2',
             name: 'चैतन्य साहित्य भांडार',
             address: '८८ व्ही. न-९, रंजनवन हाऊसिंग सोसायटी, शरद हॉटेल समोर, छत्रपती संभाजीनगर.',
-            phone: '९६७३००९९३५',
+            phone: '९६३००९९३५',
             gstin: '',
-            bankName: 'Bank of Maharashtra',
-            accountNo: '60410431900',
-            branch: 'Hudco, TV Centre',
-            ifsc: 'MAHB0001191',
+            bankName: '',
+            accountNo: '',
+            branch: '',
+            ifsc: '',
             markup: 5,
             badge: '+5% Higher Price'
         },
@@ -67,10 +67,10 @@ const QuotationView = () => {
             address: 'एन-११, बी- २०/३, हडको, छत्रपती संभाजीनगर.',
             phone: '९६७३०९०९४७',
             gstin: '',
-            bankName: 'Bank of Maharashtra',
-            accountNo: '60410431900',
-            branch: 'Hudco, TV Centre',
-            ifsc: 'MAHB0001191',
+            bankName: '',
+            accountNo: '',
+            branch: '',
+            ifsc: '',
             markup: 10,
             badge: '+10% Highest Price'
         }
@@ -130,10 +130,10 @@ const QuotationView = () => {
                             --color-blue-800: #1e40af !important;
                             --color-blue-700: #1d4ed8 !important;
                             --color-blue-600: #2563eb !important;
-                            --color-blue-500: #3b82f6 !important;
-                            --color-amber-600: #d97706 !important;
-                            --color-green-600: #16a34a !important;
-                            --color-white: #ffffff !important;
+                            --color-[#991b1b]: #991b1b !important;
+                            --color-[#7f1d1d]: #7f1d1d !important;
+                            --color-[#065f46]: #065f46 !important;
+                            --color-[#047857]: #047857 !important;
                             color: inherit;
                             border-color: inherit;
                             background-color: inherit;
@@ -182,11 +182,11 @@ const QuotationView = () => {
             const keys = ['store1', 'store2', 'store3'];
             for (const key of keys) {
                 setActiveTab(key);
-                await new Promise(r => setTimeout(r, 400));
+                await new Promise(r => setTimeout(r, 450));
                 const storeObj = stores[key];
                 const filename = `Quotation_${storeObj.name.replace(/\s+/g, '_')}_${quotation.quotationNumber}.pdf`;
                 await capturePDFForElement(quotationRef.current, filename);
-                await new Promise(r => setTimeout(r, 400));
+                await new Promise(r => setTimeout(r, 450));
             }
 
             addToast('All 3 quotation PDFs generated and downloaded!', 'success');
@@ -228,7 +228,7 @@ const QuotationView = () => {
                         <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
                             Quotation {quotation.quotationNumber || quotation.id}
                         </h1>
-                        <p className="text-xs text-gray-500">3-Store Bidding Engine for Procurement</p>
+                        <p className="text-xs text-gray-500">3 Distinct Store Quotations for Tender Submission</p>
                     </div>
                 </div>
 
@@ -288,13 +288,13 @@ const QuotationView = () => {
                 <button
                     onClick={() => setActiveTab('store2')}
                     className={`px-4 py-2.5 rounded-t-lg font-medium text-sm flex items-center gap-2 transition-colors ${activeTab === 'store2'
-                            ? 'bg-purple-600 text-white shadow-sm'
+                            ? 'bg-[#991b1b] text-white shadow-sm'
                             : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                         }`}
                 >
                     <Building2 className="h-4 w-4" />
                     <span>{stores.store2.name}</span>
-                    <span className="bg-purple-800/40 text-white text-[10px] px-2 py-0.5 rounded-full font-bold">
+                    <span className="bg-red-900/40 text-white text-[10px] px-2 py-0.5 rounded-full font-bold">
                         +{stores.store2.markup}%
                     </span>
                 </button>
@@ -302,13 +302,13 @@ const QuotationView = () => {
                 <button
                     onClick={() => setActiveTab('store3')}
                     className={`px-4 py-2.5 rounded-t-lg font-medium text-sm flex items-center gap-2 transition-colors ${activeTab === 'store3'
-                            ? 'bg-indigo-600 text-white shadow-sm'
+                            ? 'bg-[#047857] text-white shadow-sm'
                             : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                         }`}
                 >
                     <Building2 className="h-4 w-4" />
                     <span>{stores.store3.name}</span>
-                    <span className="bg-indigo-800/40 text-white text-[10px] px-2 py-0.5 rounded-full font-bold">
+                    <span className="bg-emerald-900/40 text-white text-[10px] px-2 py-0.5 rounded-full font-bold">
                         +{stores.store3.markup}%
                     </span>
                 </button>
@@ -351,10 +351,10 @@ const QuotationView = () => {
                                     <th className="px-4 py-3 text-right bg-blue-50/50 text-blue-900">
                                         {stores.store1.name} (Base)
                                     </th>
-                                    <th className="px-4 py-3 text-right bg-purple-50/50 text-purple-900">
+                                    <th className="px-4 py-3 text-right bg-red-50/50 text-red-900">
                                         {stores.store2.name} (+{stores.store2.markup}%)
                                     </th>
-                                    <th className="px-4 py-3 text-right bg-indigo-50/50 text-indigo-900">
+                                    <th className="px-4 py-3 text-right bg-emerald-50/50 text-emerald-900">
                                         {stores.store3.name} (+{stores.store3.markup}%)
                                     </th>
                                 </tr>
@@ -380,10 +380,10 @@ const QuotationView = () => {
                                             <td className="px-4 py-3 text-right bg-blue-50/20 font-medium">
                                                 ₹{price1.toFixed(2)} <span className="text-gray-400 text-xs">(₹{total1.toFixed(2)})</span>
                                             </td>
-                                            <td className="px-4 py-3 text-right bg-purple-50/20 font-medium">
+                                            <td className="px-4 py-3 text-right bg-red-50/20 font-medium">
                                                 ₹{price2.toFixed(2)} <span className="text-gray-400 text-xs">(₹{total2.toFixed(2)})</span>
                                             </td>
-                                            <td className="px-4 py-3 text-right bg-indigo-50/20 font-medium">
+                                            <td className="px-4 py-3 text-right bg-emerald-50/20 font-medium">
                                                 ₹{price3.toFixed(2)} <span className="text-gray-400 text-xs">(₹{total3.toFixed(2)})</span>
                                             </td>
                                         </tr>
@@ -409,13 +409,13 @@ const QuotationView = () => {
                                                 ₹{grand1.toFixed(2)}
                                                 <div className="text-[10px] text-emerald-600 font-semibold uppercase">✓ Lowest (Order Winner)</div>
                                             </td>
-                                            <td className="px-4 py-4 text-right text-base text-purple-700 bg-purple-100/50">
+                                            <td className="px-4 py-4 text-right text-base text-red-700 bg-red-100/50">
                                                 ₹{grand2.toFixed(2)}
-                                                <div className="text-[10px] text-purple-600 font-semibold uppercase">+{stores.store2.markup}% Bid</div>
+                                                <div className="text-[10px] text-red-600 font-semibold uppercase">+{stores.store2.markup}% Bid</div>
                                             </td>
-                                            <td className="px-4 py-4 text-right text-base text-indigo-700 bg-indigo-100/50">
+                                            <td className="px-4 py-4 text-right text-base text-emerald-700 bg-emerald-100/50">
                                                 ₹{grand3.toFixed(2)}
-                                                <div className="text-[10px] text-indigo-600 font-semibold uppercase">+{stores.store3.markup}% Bid</div>
+                                                <div className="text-[10px] text-emerald-600 font-semibold uppercase">+{stores.store3.markup}% Bid</div>
                                             </td>
                                         </tr>
                                     );
@@ -425,133 +425,341 @@ const QuotationView = () => {
                     </div>
                 </div>
             ) : (
-                /* TAB CONTENT: Single Quotation Document View (Exact Match to Invoice Design Layout) */
+                /* TAB CONTENT: Single Quotation Document View with 3 DISTINCT DESIGNS */
                 <div className="bg-white rounded-lg overflow-hidden border border-[#f3f4f6]" ref={quotationRef} id="quotation-content">
-                    <div className="p-8 print:p-0">
-                        {/* Header */}
-                        <div className="flex justify-between items-start mb-8 print:mb-4 border-b border-[#f3f4f6] pb-8 print:pb-4">
-                            <div>
-                                <div className="text-2xl font-bold text-[#2563eb] mb-2">{currentStore.name}</div>
-                                <p className="text-[#6b7280] text-sm whitespace-pre-line leading-relaxed">
-                                    {currentStore.address}<br />
-                                    {currentStore.gstin && <span>GSTIN: {currentStore.gstin}<br /></span>}
-                                    {currentStore.uniqueCode && <span>Unique Code: {currentStore.uniqueCode}<br /></span>}
-                                    Phone: {currentStore.phone}
+
+                    {/* DESIGN 1: STORE 1 (Shri Brahmchaitanya Enterprises - Corporate Blue) */}
+                    {activeTab === 'store1' && (
+                        <div className="p-8 print:p-0">
+                            {/* Header */}
+                            <div className="flex justify-between items-start mb-8 print:mb-4 border-b border-[#f3f4f6] pb-8 print:pb-4">
+                                <div>
+                                    <div className="text-2xl font-bold text-[#2563eb] mb-2">{currentStore.name}</div>
+                                    <p className="text-[#6b7280] text-sm whitespace-pre-line leading-relaxed">
+                                        {currentStore.address}<br />
+                                        {currentStore.gstin && <span>GSTIN: {currentStore.gstin}<br /></span>}
+                                        {currentStore.uniqueCode && <span>Unique Code: {currentStore.uniqueCode}<br /></span>}
+                                        Phone: {currentStore.phone}
+                                    </p>
+                                </div>
+                                <div className="text-right">
+                                    <h2 className="text-3xl font-light text-[#1f2937] mb-1">QUOTATION</h2>
+                                    <div className="text-[#2563eb] font-bold text-sm mb-1">Composition Scheme</div>
+                                    <div className="text-[#d97706] text-xs italic max-w-[200px] ml-auto mb-2 leading-tight">
+                                        Composition dealer is not eligible to collect tax on supply
+                                    </div>
+                                    <p className="text-[#4b5563] font-medium"># {quotation.quotationNumber || quotation.id}</p>
+                                    <div className="mt-4 text-sm text-[#6b7280]">
+                                        <div><span className="font-medium text-[#374151]">Date:</span> {quotation.date ? format(new Date(quotation.date), 'dd-MM-yyyy') : '-'}</div>
+                                        {quotation.validUntil && <div><span className="font-medium text-[#374151]">Valid Until:</span> {format(new Date(quotation.validUntil), 'dd-MM-yyyy')}</div>}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Bill To */}
+                            <div className="flex justify-between mb-8 print:mb-4">
+                                <div>
+                                    <h3 className="text-[#6b7280] text-xs font-bold uppercase tracking-wider mb-2">Quotation For:</h3>
+                                    <div className="text-[#1f2937] font-medium">{customer?.name || quotation.customerName || 'Valued Customer'}</div>
+                                    <div className="text-[#4b5563] text-sm whitespace-pre-line mt-1">{customer?.address || "No address provided"}</div>
+                                    {customer?.phone && <div className="text-[#4b5563] text-sm mt-1">Phone: {customer.phone}</div>}
+                                    {customer?.gstin && <div className="text-[#4b5563] text-sm mt-1">GSTIN: {customer.gstin}</div>}
+                                </div>
+                            </div>
+
+                            {/* Table */}
+                            <table className="w-full text-left text-sm mb-6 print:mb-2">
+                                <thead className="bg-[#f9fafb] text-[#374151] font-medium border-y border-[#e5e7eb]">
+                                    <tr>
+                                        <th className="px-4 py-3">Item</th>
+                                        <th className="px-4 py-3 text-center">Qty</th>
+                                        <th className="px-4 py-3 text-right">Price</th>
+                                        <th className="px-4 py-3 text-right">Amount</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {activeItems.map((item, index) => (
+                                        <tr key={index}>
+                                            <td className="px-4 py-1.5">
+                                                <div className="font-medium text-[#1f2937]">{item.name || 'Item'}</div>
+                                            </td>
+                                            <td className="px-4 py-1.5 text-center">{item.quantity}</td>
+                                            <td className="px-4 py-1.5 text-right">₹{item.adjustedPrice.toFixed(2)}</td>
+                                            <td className="px-4 py-1.5 text-right font-medium text-[#111827]">
+                                                ₹{item.lineTotal.toFixed(2)}
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+
+                            {/* Bank Details & Totals */}
+                            <div className="flex justify-between items-start border-t border-[#e5e7eb] pt-6 mt-8 print:mt-4">
+                                <div className="w-1/2 p-4 bg-[#f9fafb] rounded-md print:bg-transparent print:p-0">
+                                    <h4 className="font-bold text-[#1d4ed8] text-sm mb-2">Bank Details:</h4>
+                                    <div className="text-[#4b5563] text-xs space-y-1">
+                                        <div><span className="font-medium">Bank Name:</span> {currentStore.bankName}</div>
+                                        <div><span className="font-medium">Account No.:</span> {currentStore.accountNo}</div>
+                                        <div><span className="font-medium">Branch:</span> {currentStore.branch}</div>
+                                        <div><span className="font-medium">IFSC Code:</span> {currentStore.ifsc}</div>
+                                    </div>
+                                </div>
+
+                                <div className="w-72 space-y-2">
+                                    {activeDiscount > 0 && (
+                                        <div className="flex justify-between text-sm text-[#4b5563]">
+                                            <span className="font-medium">Discount:</span>
+                                            <span>-₹{activeDiscount.toFixed(2)}</span>
+                                        </div>
+                                    )}
+                                    <div className="flex justify-between text-lg font-bold text-[#1f2937] border-t border-[#e5e7eb] pt-2 mt-2">
+                                        <span>Total:</span>
+                                        <span>₹{activeTotal.toFixed(2)}</span>
+                                    </div>
+
+                                    <div className="text-xs text-[#1d4ed8] font-semibold text-right mt-1">
+                                        Rupees {numberToWords(activeTotal)}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Terms & Signature */}
+                            <div className="flex justify-between items-end mt-12 print:mt-16">
+                                <div className="w-1/2 text-[#6b7280] text-sm">
+                                    <h4 className="font-medium text-[#374151] mb-1">Terms & Conditions:</h4>
+                                    <ul className="list-disc list-inside space-y-1 text-xs">
+                                        <li>Interest will be recovered @24% p.a. on overdue unpaid bills.</li>
+                                        <li>Goods once sold cannot be Returned or Exchanged.</li>
+                                        <li>Subject to Chh. Sambhaji Nagar Jurisdiction</li>
+                                        <li>E&OE</li>
+                                    </ul>
+                                </div>
+
+                                <div className="text-right">
+                                    <div className="text-[#1f2937] font-bold text-sm mb-16">{currentStore.name}</div>
+                                    <div className="border-t border-gray-400 pt-2 text-[#4b5563] text-sm font-medium inline-block min-w-[200px]">
+                                        Authorised Signature
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* DESIGN 2: STORE 2 (चैतन्य साहित्य भांडार - Crimson Classic Design, NO Bank Details) */}
+                    {activeTab === 'store2' && (
+                        <div className="p-8 print:p-0 bg-white">
+                            {/* Header: Centered Classic Header with Maroon Accent */}
+                            <div className="text-center border-b-2 border-double border-[#991b1b] pb-6 mb-6">
+                                <div className="inline-block bg-[#991b1b] text-white text-xs uppercase font-bold tracking-widest px-3 py-0.5 mb-2 rounded-full">
+                                    दरपत्रक / QUOTATION
+                                </div>
+                                <h1 className="text-3xl font-bold text-[#991b1b] mb-2 tracking-wide font-serif">
+                                    {currentStore.name}
+                                </h1>
+                                <p className="text-gray-700 text-sm max-w-xl mx-auto font-medium">
+                                    {currentStore.address}
+                                </p>
+                                <p className="text-[#991b1b] text-sm font-bold mt-1">
+                                    मोबा.: {currentStore.phone}
                                 </p>
                             </div>
-                            <div className="text-right">
-                                <h2 className="text-3xl font-light text-[#1f2937] mb-1">QUOTATION</h2>
-                                <div className="text-[#2563eb] font-bold text-sm mb-1">Composition Scheme</div>
-                                <div className="text-[#d97706] text-xs italic max-w-[200px] ml-auto mb-2 leading-tight">
-                                    Composition dealer is not eligible to collect tax on supply
+
+                            {/* Meta & Customer Block */}
+                            <div className="grid grid-cols-2 gap-4 mb-6 bg-red-50/40 p-4 rounded-lg border border-red-100">
+                                <div>
+                                    <h3 className="text-[#991b1b] text-xs font-bold uppercase tracking-wider mb-1">ग्राहक / Quotation For:</h3>
+                                    <div className="text-gray-900 font-bold text-base">{customer?.name || quotation.customerName || 'Valued Customer'}</div>
+                                    <div className="text-gray-700 text-xs mt-1 whitespace-pre-line">{customer?.address || "No address provided"}</div>
+                                    {customer?.phone && <div className="text-gray-700 text-xs mt-0.5">मोबा.: {customer.phone}</div>}
                                 </div>
-                                <p className="text-[#4b5563] font-medium"># {quotation.quotationNumber || quotation.id}</p>
-                                <div className="mt-4 text-sm text-[#6b7280]">
-                                    <div><span className="font-medium text-[#374151]">Date:</span> {quotation.date ? format(new Date(quotation.date), 'dd-MM-yyyy') : '-'}</div>
-                                    {quotation.validUntil && <div><span className="font-medium text-[#374151]">Valid Until:</span> {format(new Date(quotation.validUntil), 'dd-MM-yyyy')}</div>}
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Customer Info / Bill To */}
-                        <div className="flex justify-between mb-8 print:mb-4">
-                            <div>
-                                <h3 className="text-[#6b7280] text-xs font-bold uppercase tracking-wider mb-2">Quotation For:</h3>
-                                <div className="text-[#1f2937] font-medium">{customer?.name || quotation.customerName || 'Valued Customer'}</div>
-                                <div className="text-[#4b5563] text-sm whitespace-pre-line mt-1">{customer?.address || "No address provided"}</div>
-                                {customer?.phone && <div className="text-[#4b5563] text-sm mt-1">Phone: {customer.phone}</div>}
-                                {customer?.gstin && <div className="text-[#4b5563] text-sm mt-1">GSTIN: {customer.gstin}</div>}
-                            </div>
-                        </div>
-
-                        {/* Items Table */}
-                        <table className="w-full text-left text-sm mb-6 print:mb-2">
-                            <thead className="bg-[#f9fafb] text-[#374151] font-medium border-y border-[#e5e7eb]">
-                                <tr>
-                                    <th className="px-4 py-3">Item</th>
-                                    <th className="px-4 py-3 text-center">Qty</th>
-                                    <th className="px-4 py-3 text-right">Price</th>
-                                    <th className="px-4 py-3 text-right">Amount</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {activeItems.map((item, index) => (
-                                    <tr key={index}>
-                                        <td className="px-4 py-1.5">
-                                            <div className="font-medium text-[#1f2937]">{item.name || 'Item'}</div>
-                                        </td>
-                                        <td className="px-4 py-1.5 text-center">{item.quantity}</td>
-                                        <td className="px-4 py-1.5 text-right">₹{item.adjustedPrice.toFixed(2)}</td>
-                                        <td className="px-4 py-1.5 text-right font-medium text-[#111827]">
-                                            ₹{item.lineTotal.toFixed(2)}
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-
-                        {/* Bottom Section: Bank Details and Totals */}
-                        <div className="flex justify-between items-start border-t border-[#e5e7eb] pt-6 mt-8 print:mt-4">
-                            {/* Bank Details on the Left */}
-                            <div className="w-1/2 p-4 bg-[#f9fafb] rounded-md print:bg-transparent print:p-0">
-                                {currentStore.bankName && (
-                                    <>
-                                        <h4 className="font-bold text-[#1d4ed8] text-sm mb-2">Bank Details:</h4>
-                                        <div className="text-[#4b5563] text-xs space-y-1">
-                                            <div><span className="font-medium">Bank Name:</span> {currentStore.bankName}</div>
-                                            <div><span className="font-medium">Account No.:</span> {currentStore.accountNo}</div>
-                                            <div><span className="font-medium">Branch:</span> {currentStore.branch}</div>
-                                            <div><span className="font-medium">IFSC Code:</span> {currentStore.ifsc}</div>
-                                        </div>
-                                    </>
-                                )}
-                            </div>
-
-                            {/* Totals on the Right */}
-                            <div className="w-72 space-y-2">
-                                {activeDiscount > 0 && (
-                                    <div className="flex justify-between text-sm text-[#4b5563]">
-                                        <span className="font-medium">Discount:</span>
-                                        <span>-₹{activeDiscount.toFixed(2)}</span>
+                                <div className="text-right flex flex-col justify-between">
+                                    <div>
+                                        <span className="text-xs text-gray-500 uppercase font-bold">कोटेशन क्र. / Quote No.:</span>
+                                        <div className="text-[#991b1b] font-bold text-base"># {quotation.quotationNumber || quotation.id}</div>
                                     </div>
-                                )}
-                                <div className="flex justify-between text-lg font-bold text-[#1f2937] border-t border-[#e5e7eb] pt-2 mt-2">
-                                    <span>Total:</span>
-                                    <span>₹{activeTotal.toFixed(2)}</span>
+                                    <div className="text-xs text-gray-600 space-y-1">
+                                        <div><span className="font-semibold text-gray-800">दिनांक / Date:</span> {quotation.date ? format(new Date(quotation.date), 'dd-MM-yyyy') : '-'}</div>
+                                        {quotation.validUntil && <div><span className="font-semibold text-gray-800">वैधता / Valid Until:</span> {format(new Date(quotation.validUntil), 'dd-MM-yyyy')}</div>}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Table */}
+                            <table className="w-full text-left text-sm mb-6 border border-red-200">
+                                <thead className="bg-[#991b1b] text-white font-medium">
+                                    <tr>
+                                        <th className="px-4 py-2.5">अ.क्र.</th>
+                                        <th className="px-4 py-2.5">तपशील / Description</th>
+                                        <th className="px-4 py-2.5 text-center">नग / Qty</th>
+                                        <th className="px-4 py-2.5 text-right">दर / Rate (₹)</th>
+                                        <th className="px-4 py-2.5 text-right">एकूण / Amount (₹)</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-red-100">
+                                    {activeItems.map((item, index) => (
+                                        <tr key={index} className={index % 2 === 0 ? 'bg-white' : 'bg-red-50/20'}>
+                                            <td className="px-4 py-2 text-center text-gray-500 font-mono">{index + 1}</td>
+                                            <td className="px-4 py-2 font-medium text-gray-900">{item.name || 'Item'}</td>
+                                            <td className="px-4 py-2 text-center">{item.quantity}</td>
+                                            <td className="px-4 py-2 text-right">₹{item.adjustedPrice.toFixed(2)}</td>
+                                            <td className="px-4 py-2 text-right font-semibold text-gray-900">₹{item.lineTotal.toFixed(2)}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+
+                            {/* Totals Block (NO Bank Details) */}
+                            <div className="flex justify-between items-start pt-4 border-t-2 border-[#991b1b]">
+                                {/* Left Side: Empty space or notes (Bank Details Removed) */}
+                                <div className="w-1/2 text-xs text-gray-500 italic pr-4">
+                                    * हे अंदाजपत्रक ग्राहकाच्या मागणीनुसार तयार करण्यात आले आहे.<br/>
+                                    * वस्तूंचे दर ३० दिवसांपर्यंत ग्राह्य राहतील.
                                 </div>
 
-                                <div className="text-xs text-[#1d4ed8] font-semibold text-right mt-1">
-                                    Rupees {numberToWords(activeTotal)}
+                                <div className="w-72 space-y-2 bg-red-50/50 p-4 rounded-md border border-red-100">
+                                    {activeDiscount > 0 && (
+                                        <div className="flex justify-between text-sm text-gray-700">
+                                            <span>सवलत / Discount:</span>
+                                            <span>-₹{activeDiscount.toFixed(2)}</span>
+                                        </div>
+                                    )}
+                                    <div className="flex justify-between text-lg font-bold text-[#991b1b] border-t border-red-200 pt-2 mt-1">
+                                        <span>एकूण रक्कम / Total:</span>
+                                        <span>₹{activeTotal.toFixed(2)}</span>
+                                    </div>
+                                    <div className="text-xs text-[#991b1b] font-semibold text-right mt-1 italic">
+                                        अक्षरी रुपये: {numberToWords(activeTotal)}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Terms & Signature */}
+                            <div className="flex justify-between items-end mt-12 pt-6 border-t border-gray-200">
+                                <div className="w-1/2 text-gray-600 text-xs">
+                                    <h4 className="font-bold text-[#991b1b] mb-1">अटी व शर्ती / Terms:</h4>
+                                    <ul className="list-disc list-inside space-y-0.5">
+                                        <li>एकदा विक्री केलेला माल परत घेतला जाणार नाही.</li>
+                                        <li>सर्व वाद छत्रपती संभाजीनगर न्यायालयाच्या अंतर्गत राहतील.</li>
+                                        <li>ई. व ओ. ई.</li>
+                                    </ul>
+                                </div>
+
+                                <div className="text-right">
+                                    <div className="text-[#991b1b] font-bold text-sm mb-14">करिता, {currentStore.name}</div>
+                                    <div className="border-t border-[#991b1b] pt-1.5 text-gray-700 text-xs font-bold inline-block min-w-[180px]">
+                                        ऑथराइज्ड सही / Signature
+                                    </div>
                                 </div>
                             </div>
                         </div>
+                    )}
 
-                        {/* Final Bottom Section: Terms and Signature */}
-                        <div className="flex justify-between items-end mt-12 print:mt-16">
-                            {/* Terms on the Left */}
-                            <div className="w-1/2 text-[#6b7280] text-sm">
-                                <h4 className="font-medium text-[#374151] mb-1">Terms & Conditions:</h4>
-                                <ul className="list-disc list-inside space-y-1 text-xs">
-                                    <li>Interest will be recovered @24% p.a. on overdue unpaid bills.</li>
-                                    <li>Goods once sold cannot be Returned or Exchanged.</li>
-                                    <li>Subject to Chh. Sambhaji Nagar Jurisdiction</li>
-                                    <li>E&OE</li>
-                                </ul>
+                    {/* DESIGN 3: STORE 3 (गुरुकृपा एंटरप्राइजेस - Emerald Modern Design, NO Bank Details) */}
+                    {activeTab === 'store3' && (
+                        <div className="p-8 print:p-0 bg-white">
+                            {/* Header: Modern Boxed Card with Emerald Green */}
+                            <div className="bg-emerald-50/70 border-2 border-[#047857] rounded-xl p-6 mb-6 flex justify-between items-center">
+                                <div>
+                                    <div className="inline-block bg-[#047857] text-white text-[11px] font-bold uppercase tracking-wider px-3 py-1 rounded-md mb-2">
+                                        अंदाजपत्रक / QUOTATION
+                                    </div>
+                                    <h1 className="text-2xl font-black text-[#065f46] mb-1">
+                                        {currentStore.name}
+                                    </h1>
+                                    <p className="text-emerald-900 text-xs font-medium max-w-md leading-relaxed">
+                                        {currentStore.address}
+                                    </p>
+                                    <p className="text-[#047857] text-xs font-bold mt-1">
+                                        संपर्क: {currentStore.phone}
+                                    </p>
+                                </div>
+                                <div className="text-right bg-white p-4 rounded-lg border border-emerald-200 shadow-sm min-w-[180px]">
+                                    <div className="text-xs text-emerald-800 font-bold uppercase">कोटेशन क्रमांक</div>
+                                    <div className="text-lg font-extrabold text-[#047857]"># {quotation.quotationNumber || quotation.id}</div>
+                                    <div className="mt-2 text-xs text-gray-600">
+                                        <div><strong>दिनांक:</strong> {quotation.date ? format(new Date(quotation.date), 'dd-MM-yyyy') : '-'}</div>
+                                    </div>
+                                </div>
                             </div>
 
-                            {/* Signature on the Right */}
-                            <div className="text-right">
-                                <div className="text-[#1f2937] font-bold text-sm mb-16">{currentStore.name}</div>
-                                <div className="border-t border-gray-400 pt-2 text-[#4b5563] text-sm font-medium inline-block min-w-[200px]">
-                                    Authorised Signature
+                            {/* Customer Block */}
+                            <div className="border-l-4 border-[#047857] bg-gray-50 p-4 mb-6 rounded-r-lg">
+                                <h3 className="text-[#047857] text-xs font-bold uppercase tracking-wider mb-1">Quotation For / प्रति:</h3>
+                                <div className="text-gray-900 font-extrabold text-base">{customer?.name || quotation.customerName || 'Valued Customer'}</div>
+                                <div className="text-gray-700 text-xs mt-1 whitespace-pre-line">{customer?.address || "No address provided"}</div>
+                                {customer?.phone && <div className="text-gray-700 text-xs mt-1">फोन: {customer.phone}</div>}
+                            </div>
+
+                            {/* Table */}
+                            <table className="w-full text-left text-sm mb-6 rounded-lg overflow-hidden border border-emerald-200">
+                                <thead className="bg-[#047857] text-white font-semibold">
+                                    <tr>
+                                        <th className="px-4 py-3">अ.क्र.</th>
+                                        <th className="px-4 py-3">साहित्य / Item Description</th>
+                                        <th className="px-4 py-3 text-center">संख्या / Qty</th>
+                                        <th className="px-4 py-3 text-right">दर / Rate (₹)</th>
+                                        <th className="px-4 py-3 text-right">एकूण / Amount (₹)</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-emerald-100">
+                                    {activeItems.map((item, index) => (
+                                        <tr key={index} className="hover:bg-emerald-50/30">
+                                            <td className="px-4 py-2.5 text-center text-gray-500 font-mono text-xs">{index + 1}</td>
+                                            <td className="px-4 py-2.5 font-bold text-gray-800">{item.name || 'Item'}</td>
+                                            <td className="px-4 py-2.5 text-center font-semibold">{item.quantity}</td>
+                                            <td className="px-4 py-2.5 text-right">₹{item.adjustedPrice.toFixed(2)}</td>
+                                            <td className="px-4 py-2.5 text-right font-extrabold text-[#065f46]">₹{item.lineTotal.toFixed(2)}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+
+                            {/* Totals (NO Bank Details) */}
+                            <div className="flex justify-between items-start pt-4 border-t-2 border-[#047857]">
+                                {/* Left Side: Empty Space / Notes (Bank Details Removed) */}
+                                <div className="w-1/2 text-xs text-gray-500">
+                                    <div className="bg-emerald-50/50 p-3 rounded-md border border-emerald-100 text-emerald-900">
+                                        <strong>विशेष टीप:</strong> हे अधिकृत दरपत्रक सरकारी / खासगी टेंडरसाठी ग्राह्य आहे.
+                                    </div>
+                                </div>
+
+                                <div className="w-72 bg-emerald-900 text-white p-4 rounded-xl shadow-sm">
+                                    {activeDiscount > 0 && (
+                                        <div className="flex justify-between text-xs text-emerald-200 mb-1">
+                                            <span>सवलत / Discount:</span>
+                                            <span>-₹{activeDiscount.toFixed(2)}</span>
+                                        </div>
+                                    )}
+                                    <div className="flex justify-between text-lg font-black border-t border-emerald-700 pt-2 mt-1">
+                                        <span>एकूण / Total:</span>
+                                        <span className="text-emerald-300">₹{activeTotal.toFixed(2)}</span>
+                                    </div>
+                                    <div className="text-[11px] text-emerald-200 font-medium text-right mt-2 italic">
+                                        Rupees {numberToWords(activeTotal)}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Terms & Signature */}
+                            <div className="flex justify-between items-end mt-12 pt-6 border-t border-gray-200">
+                                <div className="w-1/2 text-gray-600 text-xs">
+                                    <h4 className="font-bold text-[#047857] mb-1">नियम व अटी:</h4>
+                                    <ol className="list-decimal list-inside space-y-0.5">
+                                        <li>दरपत्रक ३० दिवसांसाठी लागू राहील.</li>
+                                        <li>माल बुकिंगनंतर डिलिव्हरी दिली जाईल.</li>
+                                        <li>क्षेत्र: छत्रपती संभाजीनगर.</li>
+                                    </ol>
+                                </div>
+
+                                <div className="text-right">
+                                    <div className="text-[#065f46] font-extrabold text-sm mb-14">करिता, {currentStore.name}</div>
+                                    <div className="border-t-2 border-[#047857] pt-1 text-[#047857] text-xs font-extrabold inline-block min-w-[180px]">
+                                        स्वाक्षरी / Authorized Signatory
+                                    </div>
                                 </div>
                             </div>
                         </div>
-
-                        <div className="mt-8 print:mt-4 pt-4 print:pt-2 border-t border-[#f3f4f6] text-center text-xs text-[#9ca3af]">
-                            Generated by Brahmchaitanya Billing System
-                        </div>
-                    </div>
+                    )}
                 </div>
             )}
 
@@ -573,8 +781,8 @@ const QuotationView = () => {
                             </p>
 
                             {/* Store 2 Settings */}
-                            <div className="bg-purple-50 border border-purple-100 p-4 rounded-lg space-y-3">
-                                <h4 className="font-bold text-purple-700">Store 2 (+5% Price Hike)</h4>
+                            <div className="bg-red-50 border border-red-100 p-4 rounded-lg space-y-3">
+                                <h4 className="font-bold text-red-700">Store 2 (+5% Price Hike)</h4>
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                     <div>
                                         <label className="text-xs font-semibold text-gray-700">Company Name</label>
@@ -607,8 +815,8 @@ const QuotationView = () => {
                             </div>
 
                             {/* Store 3 Settings */}
-                            <div className="bg-indigo-50 border border-indigo-100 p-4 rounded-lg space-y-3">
-                                <h4 className="font-bold text-indigo-700">Store 3 (+10% Price Hike)</h4>
+                            <div className="bg-emerald-50 border border-emerald-100 p-4 rounded-lg space-y-3">
+                                <h4 className="font-bold text-emerald-700">Store 3 (+10% Price Hike)</h4>
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                     <div>
                                         <label className="text-xs font-semibold text-gray-700">Company Name</label>
