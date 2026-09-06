@@ -14,9 +14,9 @@ const Inventory = () => {
     const [submitting, setSubmitting] = useState(false);
 
     const filteredItems = items.filter(i => {
-        const matchesSearch = i.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            i.sku?.toLowerCase().includes(searchTerm.toLowerCase());
-        return matchesSearch;
+        const nameMatch = (i.name || '').toLowerCase().includes(searchTerm.toLowerCase());
+        const skuMatch = (i.sku || '').toLowerCase().includes(searchTerm.toLowerCase());
+        return nameMatch || skuMatch;
     });
 
     const openAddStockModal = (item) => {

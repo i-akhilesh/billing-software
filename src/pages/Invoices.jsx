@@ -15,8 +15,8 @@ const Invoices = () => {
     const [filterStatus, setFilterStatus] = useState('All');
 
     const getCustomerName = (id) => {
-        const customer = customers.find(c => c.id === id);
-        return customer ? customer.name : 'Unknown';
+        const customer = (customers || []).find(c => c.id === id);
+        return customer ? (customer.name || 'Unnamed Customer') : 'Unknown';
     };
 
     const handleStatusChange = async (id, newStatus) => {
@@ -30,9 +30,9 @@ const Invoices = () => {
     };
 
     const filteredInvoices = invoices.filter(inv => {
-        const matchesSearch =
-            inv.invoiceNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            getCustomerName(inv.customerId).toLowerCase().includes(searchTerm.toLowerCase());
+        const invNumMatch = (inv.invoiceNumber || '').toLowerCase().includes(searchTerm.toLowerCase());
+        const custNameMatch = (getCustomerName(inv.customerId) || '').toLowerCase().includes(searchTerm.toLowerCase());
+        const matchesSearch = invNumMatch || custNameMatch;
         const matchesStatus = filterStatus === 'All' || inv.status === filterStatus;
         return matchesSearch && matchesStatus;
     });

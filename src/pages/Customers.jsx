@@ -9,8 +9,10 @@ const Customers = () => {
     const [searchTerm, setSearchTerm] = useState('');
 
     const filteredCustomers = customers.filter(c =>
-        c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        c.email.toLowerCase().includes(searchTerm.toLowerCase())
+        (c.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (c.email || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (c.phone || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (c.gst || '').toLowerCase().includes(searchTerm.toLowerCase())
     );
 
     const handleDelete = async (id) => {

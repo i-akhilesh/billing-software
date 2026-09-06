@@ -36,11 +36,13 @@ const InvoiceView = () => {
             const foundInvoice = invoices.find(i => i.id === id);
             if (foundInvoice) {
                 setInvoice(foundInvoice);
-                const foundCustomer = customers.find(c => c.id === foundInvoice.customerId);
+                const foundCustomer = (customers || []).find(c => c.id === foundInvoice.customerId) || {
+                    id: foundInvoice.customerId || 'c_unknown',
+                    name: foundInvoice.customerName || 'Customer',
+                    address: foundInvoice.customerAddress || foundInvoice.address || 'No address provided',
+                    gstin: foundInvoice.customerGstin || foundInvoice.gst || ''
+                };
                 setCustomer(foundCustomer);
-            } else {
-                // If loaded but not found, maybe redirect or show error
-                // navigate('/invoices'); // Don't redirect immediately to avoid flash if loading
             }
         }
     }, [id, invoices, customers, navigate]);

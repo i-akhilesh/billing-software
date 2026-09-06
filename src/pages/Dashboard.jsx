@@ -146,19 +146,11 @@ const Dashboard = () => {
                 </div>
             </div>
 
-            {/* Migration Tool (Admin Only) - Added prominent visibility for empty state */}
-            {user?.role === 'admin' && (
-                <div className="mb-8">
-                    <DataMigration />
-                </div>
-            )}
-
-            {/* Empty State / Welcome Message for Non-Admins or when clean */}
-            {invoices.length === 0 && items.length === 0 && customers.length === 0 && user?.role !== 'admin' && (
-                <div className="bg-blue-50 border-l-4 border-blue-500 p-4 mb-8">
-                    <p className="text-blue-700">
-                        Welcome! The database is currently empty.
-                        Please ask an administrator to sync data or start adding new customers and items.
+            {/* Empty State / Welcome Message if database is clean */}
+            {invoices.length === 0 && items.length === 0 && customers.length === 0 && (
+                <div className="bg-blue-50 border-l-4 border-blue-500 p-4 mb-8 rounded-r-lg">
+                    <p className="text-blue-700 font-medium">
+                        Welcome! Your cloud database is ready. Start by adding your customers and items to create invoices.
                     </p>
                 </div>
             )}

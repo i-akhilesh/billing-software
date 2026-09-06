@@ -19,17 +19,12 @@ export const AuthProvider = ({ children }) => {
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
             if (currentUser) {
-                // Determine role based on email (temporary logic until roles are in DB)
-                let role = 'user';
-                if (currentUser.email === 'admin@gmail.com') {
-                    role = 'admin';
-                }
-
+                // Grant full access (admin role) to all users so everyone sees complete shared data
                 setUser({
                     uid: currentUser.uid,
                     email: currentUser.email,
-                    name: currentUser.displayName || currentUser.email.split('@')[0],
-                    role: role
+                    name: currentUser.displayName || (currentUser.email ? currentUser.email.split('@')[0] : 'User'),
+                    role: 'admin'
                 });
             } else {
                 setUser(null);

@@ -10,8 +10,9 @@ const Items = () => {
     const [statusFilter, setStatusFilter] = useState('all');
 
     const filteredItems = items.filter(i => {
-        const matchesSearch = i.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            i.sku?.toLowerCase().includes(searchTerm.toLowerCase());
+        const nameMatch = (i.name || '').toLowerCase().includes(searchTerm.toLowerCase());
+        const skuMatch = (i.sku || '').toLowerCase().includes(searchTerm.toLowerCase());
+        const matchesSearch = nameMatch || skuMatch;
         const matchesStatus = statusFilter === 'all' || i.status === statusFilter;
         return matchesSearch && matchesStatus;
     });
