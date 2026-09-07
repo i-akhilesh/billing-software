@@ -52,7 +52,7 @@ const QuotationView = () => {
             id: 'store2',
             name: 'चैतन्य साहित्य भांडार',
             address: '८८ व्ही. न-९, रंजनवन हाऊसिंग सोसायटी, शरद हॉटेल समोर, छत्रपती संभाजीनगर.',
-            phone: '९६३००९९३५',
+            phone: '९६७३००९९३५',
             gstin: '',
             bankName: '',
             accountNo: '',
