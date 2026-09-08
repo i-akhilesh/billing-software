@@ -10,7 +10,8 @@ import {
     query,
     where,
     orderBy,
-    runTransaction
+    runTransaction,
+    onSnapshot
 } from 'firebase/firestore';
 
 // Collection Names
@@ -143,16 +144,15 @@ const dbService = {
     updateItemStock: async (id, quantityData) => {
         try {
             const docRef = doc(db, COLLECTIONS.ITEMS, id);
-            // Ideally use transactions, but for now read-update
-            const snapshot = await getDocs(query(collection(db, COLLECTIONS.ITEMS), where('__name__', '==', id)));
-            if (snapshot.empty) throw new Error('Item not found');
-
-            const item = snapshot.docs[0].data();
-            const currentStock = parseFloat(item.stock) || 0;
-            const newStock = currentStock + quantityData;
-
-            await updateDoc(docRef, { stock: newStock });
-            return { ...item, id, stock: newStock };
+            return await runTransaction(db, async (transaction) => {
+                const itemDoc = await transaction.get(docRef);
+                if (!itemDoc.exists()) throw new Error('Item not found');
+                const item = itemDoc.data();
+                const currentStock = parseFloat(item.stock) || 0;
+                const newStock = currentStock + quantityData;
+                transaction.update(docRef, { stock: newStock });
+                return { ...item, id, stock: newStock };
+            });
         } catch (error) {
             console.error("Error updating stock:", error);
             throw error;
@@ -298,6 +298,55 @@ const dbService = {
             console.error("Error deleting quotation:", error);
             throw error;
         }
+    },
+
+    // --- Real-time Subscriptions ---
+    subscribeCustomers: (onSuccess, onError) => {
+        const colRef = collection(db, COLLECTIONS.CUSTOMERS);
+        return onSnapshot(colRef, (snapshot) => {
+            const list = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            list.sort((a, b) => (a.name || '').localeCompare(b.name || '', undefined, { sensitivity: 'base' }));
+            onSuccess(list);
+        }, (error) => {
+            console.error("Error in customers subscription:", error);
+            if (onError) onError(error);
+        });
+    },
+
+    subscribeItems: (onSuccess, onError) => {
+        const colRef = collection(db, COLLECTIONS.ITEMS);
+        return onSnapshot(colRef, (snapshot) => {
+            const list = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            list.sort((a, b) => (a.name || '').localeCompare(b.name || '', undefined, { sensitivity: 'base' }));
+            onSuccess(list);
+        }, (error) => {
+            console.error("Error in items subscription:", error);
+            if (onError) onError(error);
+        });
+    },
+
+    subscribeInvoices: (onSuccess, onError) => {
+        const colRef = collection(db, COLLECTIONS.INVOICES);
+        return onSnapshot(colRef, (snapshot) => {
+            const list = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            list.sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
+            onSuccess(list);
+        }, (error) => {
+            console.error("Error in invoices subscription:", error);
+            if (onError) onError(error);
+        });
+    },
+
+    subscribeQuotations: (onSuccess, onError) => {
+        const colRef = collection(db, COLLECTIONS.QUOTATIONS);
+        return onSnapshot(colRef, (snapshot) => {
+            const list = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            list.sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
+            onSuccess(list);
+        }, (error) => {
+            console.error("Error in quotations subscription:", error);
+            if (onError) onError(error);
+        });
     }
 };
 

@@ -15,173 +15,102 @@ export const DataProvider = ({ children }) => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
-    const refreshData = useCallback(async () => {
+    useEffect(() => {
         setLoading(true);
-        try {
-            const [customersData, itemsData, invoicesData, quotationsData] = await Promise.all([
-                dbService.getCustomers(),
-                dbService.getItems(),
-                dbService.getInvoices(),
-                dbService.getQuotations()
-            ]);
-            setCustomers(customersData || []);
-            setItems(itemsData || []);
-            setInvoices(invoicesData || []);
-            setQuotations(quotationsData || []);
-            setError(null);
-        } catch (err) {
-            console.error('Error fetching data:', err);
-            setError('Failed to load data');
-        } finally {
-            setLoading(false);
-        }
+        let loadedFlags = { customers: false, items: false, invoices: false, quotations: false };
+
+        const checkFullyLoaded = () => {
+            if (Object.values(loadedFlags).every(Boolean)) {
+                setLoading(false);
+            }
+        };
+
+        const unsubscribeCustomers = dbService.subscribeCustomers(
+            (data) => {
+                setCustomers(data || []);
+                loadedFlags.customers = true;
+                checkFullyLoaded();
+            },
+            (err) => {
+                console.error("Customers sync error:", err);
+                setError('Failed to sync customers');
+                loadedFlags.customers = true;
+                checkFullyLoaded();
+            }
+        );
+
+        const unsubscribeItems = dbService.subscribeItems(
+            (data) => {
+                setItems(data || []);
+                loadedFlags.items = true;
+                checkFullyLoaded();
+            },
+            (err) => {
+                console.error("Items sync error:", err);
+                setError('Failed to sync items');
+                loadedFlags.items = true;
+                checkFullyLoaded();
+            }
+        );
+
+        const unsubscribeInvoices = dbService.subscribeInvoices(
+            (data) => {
+                setInvoices(data || []);
+                loadedFlags.invoices = true;
+                checkFullyLoaded();
+            },
+            (err) => {
+                console.error("Invoices sync error:", err);
+                setError('Failed to sync invoices');
+                loadedFlags.invoices = true;
+                checkFullyLoaded();
+            }
+        );
+
+        const unsubscribeQuotations = dbService.subscribeQuotations(
+            (data) => {
+                setQuotations(data || []);
+                loadedFlags.quotations = true;
+                checkFullyLoaded();
+            },
+            (err) => {
+                console.error("Quotations sync error:", err);
+                setError('Failed to sync quotations');
+                loadedFlags.quotations = true;
+                checkFullyLoaded();
+            }
+        );
+
+        return () => {
+            unsubscribeCustomers();
+            unsubscribeItems();
+            unsubscribeInvoices();
+            unsubscribeQuotations();
+        };
     }, []);
 
-    useEffect(() => {
-        refreshData();
-    }, [refreshData]);
+    // Helper CRUD actions - Firestore onSnapshot updates the React state automatically
+    const addCustomer = async (data) => dbService.createCustomer(data);
+    const updateCustomer = async (id, data) => dbService.updateCustomer(id, data);
+    const deleteCustomer = async (id) => dbService.deleteCustomer(id);
 
-    const addCustomer = async (data) => {
-        try {
-            const newCustomer = await dbService.createCustomer(data);
-            setCustomers(prev => [...prev, newCustomer]);
-            return newCustomer;
-        } catch (err) {
-            console.error(err);
-            throw err;
-        }
-    };
+    const addItem = async (data) => dbService.createItem(data);
+    const updateItem = async (id, data) => dbService.updateItem(id, data);
+    const deleteItem = async (id) => dbService.deleteItem(id);
+    const updateItemStock = async (id, quantityData) => dbService.updateItemStock(id, quantityData);
 
-    const updateCustomer = async (id, data) => {
-        try {
-            const updated = await dbService.updateCustomer(id, data);
-            setCustomers(prev => prev.map(c => c.id === id ? { ...c, ...updated } : c));
-            return updated;
-        } catch (err) {
-            console.error(err);
-            throw err;
-        }
-    };
+    const addInvoice = async (data) => dbService.createInvoice(data);
+    const updateInvoice = async (id, data) => dbService.updateInvoice(id, data);
+    const deleteInvoice = async (id) => dbService.deleteInvoice(id);
+    const addPayment = async (invoiceId, paymentData) => dbService.addPayment(invoiceId, paymentData);
 
-    const deleteCustomer = async (id) => {
-        try {
-            await dbService.deleteCustomer(id);
-            setCustomers(prev => prev.filter(c => c.id !== id));
-        } catch (err) {
-            console.error(err);
-            throw err;
-        }
-    };
+    const addQuotation = async (data) => dbService.createQuotation(data);
+    const updateQuotation = async (id, data) => dbService.updateQuotation(id, data);
+    const deleteQuotation = async (id) => dbService.deleteQuotation(id);
 
-    // --- Items ---
-    const addItem = async (data) => {
-        try {
-            const newItem = await dbService.createItem(data);
-            setItems(prev => [...prev, newItem]);
-            return newItem;
-        } catch (err) {
-            console.error(err);
-            throw err;
-        }
-    };
-
-    const updateItem = async (id, data) => {
-        try {
-            const updated = await dbService.updateItem(id, data);
-            setItems(prev => prev.map(i => i.id === id ? { ...i, ...updated } : i));
-            return updated;
-        } catch (err) {
-            console.error(err);
-            throw err;
-        }
-    };
-
-    const deleteItem = async (id) => {
-        try {
-            await dbService.deleteItem(id);
-            setItems(prev => prev.filter(i => i.id !== id));
-        } catch (err) {
-            console.error(err);
-            throw err;
-        }
-    };
-
-    // --- Invoices ---
-    const addInvoice = async (data) => {
-        try {
-            const newInvoice = await dbService.createInvoice(data);
-            setInvoices(prev => [...prev, newInvoice]);
-            return newInvoice;
-        } catch (err) {
-            console.error(err);
-            throw err;
-        }
-    };
-
-    const updateInvoice = async (id, data) => {
-        try {
-            const updated = await dbService.updateInvoice(id, data);
-            setInvoices(prev => prev.map(i => i.id === id ? { ...i, ...updated } : i));
-            return updated;
-        } catch (err) {
-            console.error(err);
-            throw err;
-        }
-    };
-
-    const deleteInvoice = async (id) => {
-        try {
-            await dbService.deleteInvoice(id);
-            setInvoices(prev => prev.filter(i => i.id !== id));
-        } catch (err) {
-            console.error(err);
-            throw err;
-        }
-    };
-
-    const addPayment = async (invoiceId, paymentData) => {
-        try {
-            const updatedInvoice = await dbService.addPayment(invoiceId, paymentData);
-            setInvoices(prev => prev.map(i => i.id === invoiceId ? updatedInvoice : i));
-            return updatedInvoice;
-        } catch (err) {
-            console.error(err);
-            throw err;
-        }
-    };
-
-    // --- Quotations ---
-    const addQuotation = async (data) => {
-        try {
-            const newQuotation = await dbService.createQuotation(data);
-            setQuotations(prev => [newQuotation, ...prev]);
-            return newQuotation;
-        } catch (err) {
-            console.error(err);
-            throw err;
-        }
-    };
-
-    const updateQuotation = async (id, data) => {
-        try {
-            const updated = await dbService.updateQuotation(id, data);
-            setQuotations(prev => prev.map(q => q.id === id ? { ...q, ...updated } : q));
-            return updated;
-        } catch (err) {
-            console.error(err);
-            throw err;
-        }
-    };
-
-    const deleteQuotation = async (id) => {
-        try {
-            await dbService.deleteQuotation(id);
-            setQuotations(prev => prev.filter(q => q.id !== id));
-        } catch (err) {
-            console.error(err);
-            throw err;
-        }
-    };
+    const refreshData = useCallback(() => {
+        // Data is always synced in real-time via onSnapshot subscriptions.
+    }, []);
 
     const value = {
         customers,
@@ -197,7 +126,7 @@ export const DataProvider = ({ children }) => {
         addItem,
         updateItem,
         deleteItem,
-        updateItemStock: dbService.updateItemStock,
+        updateItemStock,
         addInvoice,
         updateInvoice,
         deleteInvoice,
