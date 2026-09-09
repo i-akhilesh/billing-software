@@ -50,10 +50,12 @@ const Quotations = () => {
         if (!inv) return;
 
         try {
+            const quoteNumDigits = (inv.invoiceNumber || '').match(/\d+/);
+            const quotationNumber = quoteNumDigits ? `QT-${quoteNumDigits[0].padStart(3, '0')}` : `QT-${Date.now().toString().slice(-4)}`;
+
             const quotationData = {
-                quotationNumber: `QT-${Date.now().toString().slice(-4)}`,
+                quotationNumber,
                 date: new Date().toISOString(),
-                validUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
                 customerId: inv.customerId || '',
                 customerName: getCustomerName(inv.customerId, inv.customerName),
                 items: inv.items || [],

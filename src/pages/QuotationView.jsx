@@ -21,6 +21,15 @@ const numberToWords = (num) => {
     return str === '' ? 'Zero Only' : str.trim();
 };
 
+const formatQuoteNumber = (num, fallbackId) => {
+    const src = num || fallbackId || '';
+    const match = String(src).match(/\d+/);
+    if (match) {
+        return `QT-${match[0].padStart(3, '0')}`;
+    }
+    return src ? `QT-${src}` : 'QT-001';
+};
+
 const QuotationView = () => {
     const { id } = useParams();
     const navigate = useNavigate();
@@ -166,7 +175,8 @@ const QuotationView = () => {
 
         try {
             const currentStoreObj = stores[activeTab];
-            const filename = `Quotation_${currentStoreObj.name.replace(/\s+/g, '_')}_${quotation.quotationNumber}.pdf`;
+            const formattedQuoteNo = formatQuoteNumber(quotation?.quotationNumber, quotation?.id);
+            const filename = `Quotation_${currentStoreObj.name.replace(/\s+/g, '_')}_${formattedQuoteNo}.pdf`;
             await capturePDFForElement(quotationRef.current, filename);
             addToast('PDF downloaded successfully', 'success');
         } catch (error) {
@@ -180,11 +190,12 @@ const QuotationView = () => {
             addToast('Generating all 3 store quotation PDFs...', 'info');
 
             const keys = ['store1', 'store2', 'store3'];
+            const formattedQuoteNo = formatQuoteNumber(quotation?.quotationNumber, quotation?.id);
             for (const key of keys) {
                 setActiveTab(key);
                 await new Promise(r => setTimeout(r, 450));
                 const storeObj = stores[key];
-                const filename = `Quotation_${storeObj.name.replace(/\s+/g, '_')}_${quotation.quotationNumber}.pdf`;
+                const filename = `Quotation_${storeObj.name.replace(/\s+/g, '_')}_${formattedQuoteNo}.pdf`;
                 await capturePDFForElement(quotationRef.current, filename);
                 await new Promise(r => setTimeout(r, 450));
             }
@@ -200,6 +211,7 @@ const QuotationView = () => {
         return <div className="p-8">Loading quotation...</div>;
     }
 
+    const formattedQuoteNo = formatQuoteNumber(quotation.quotationNumber, quotation.id);
     const currentStore = stores[activeTab === 'compare' ? 'store1' : activeTab];
     const currentMarkupFactor = 1 + (currentStore?.markup || 0) / 100;
 
@@ -226,7 +238,7 @@ const QuotationView = () => {
                     </Link>
                     <div>
                         <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
-                            Quotation {quotation.quotationNumber || quotation.id}
+                            Quotation {formattedQuoteNo}
                         </h1>
                         <p className="text-xs text-gray-500">3 Distinct Store Quotations for Tender Submission</p>
                     </div>
@@ -436,22 +448,14 @@ const QuotationView = () => {
                                 <div>
                                     <div className="text-2xl font-bold text-[#2563eb] mb-2">{currentStore.name}</div>
                                     <p className="text-[#6b7280] text-sm whitespace-pre-line leading-relaxed">
-                                        {currentStore.address}<br />
-                                        {currentStore.gstin && <span>GSTIN: {currentStore.gstin}<br /></span>}
-                                        {currentStore.uniqueCode && <span>Unique Code: {currentStore.uniqueCode}<br /></span>}
-                                        Phone: {currentStore.phone}
+                                        {currentStore.address}
                                     </p>
                                 </div>
                                 <div className="text-right">
                                     <h2 className="text-3xl font-light text-[#1f2937] mb-1">QUOTATION</h2>
-                                    <div className="text-[#2563eb] font-bold text-sm mb-1">Composition Scheme</div>
-                                    <div className="text-[#d97706] text-xs italic max-w-[200px] ml-auto mb-2 leading-tight">
-                                        Composition dealer is not eligible to collect tax on supply
-                                    </div>
-                                    <p className="text-[#4b5563] font-medium"># {quotation.quotationNumber || quotation.id}</p>
+                                    <p className="text-[#4b5563] font-medium"># {formattedQuoteNo}</p>
                                     <div className="mt-4 text-sm text-[#6b7280]">
                                         <div><span className="font-medium text-[#374151]">Date:</span> {quotation.date ? format(new Date(quotation.date), 'dd-MM-yyyy') : '-'}</div>
-                                        {quotation.validUntil && <div><span className="font-medium text-[#374151]">Valid Until:</span> {format(new Date(quotation.validUntil), 'dd-MM-yyyy')}</div>}
                                     </div>
                                 </div>
                             </div>
@@ -493,15 +497,11 @@ const QuotationView = () => {
                                 </tbody>
                             </table>
 
-                            {/* Bank Details & Totals */}
+                            {/* English Special Note & Totals */}
                             <div className="flex justify-between items-start border-t border-[#e5e7eb] pt-6 mt-8 print:mt-4">
                                 <div className="w-1/2 p-4 bg-[#f9fafb] rounded-md print:bg-transparent print:p-0">
-                                    <h4 className="font-bold text-[#1d4ed8] text-sm mb-2">Bank Details:</h4>
-                                    <div className="text-[#4b5563] text-xs space-y-1">
-                                        <div><span className="font-medium">Bank Name:</span> {currentStore.bankName}</div>
-                                        <div><span className="font-medium">Account No.:</span> {currentStore.accountNo}</div>
-                                        <div><span className="font-medium">Branch:</span> {currentStore.branch}</div>
-                                        <div><span className="font-medium">IFSC Code:</span> {currentStore.ifsc}</div>
+                                    <div className="text-xs text-[#1d4ed8] font-medium leading-relaxed">
+                                        <strong>Special Note:</strong> This official quotation is valid for government / private tenders.
                                     </div>
                                 </div>
 
@@ -528,7 +528,6 @@ const QuotationView = () => {
                                 <div className="w-1/2 text-[#6b7280] text-sm">
                                     <h4 className="font-medium text-[#374151] mb-1">Terms & Conditions:</h4>
                                     <ul className="list-disc list-inside space-y-1 text-xs">
-                                        <li>Interest will be recovered @24% p.a. on overdue unpaid bills.</li>
                                         <li>Goods once sold cannot be Returned or Exchanged.</li>
                                         <li>Subject to Chh. Sambhaji Nagar Jurisdiction</li>
                                         <li>E&OE</li>
@@ -551,7 +550,7 @@ const QuotationView = () => {
                             {/* Header: Centered Classic Header with Maroon Accent */}
                             <div className="text-center border-b-2 border-double border-[#991b1b] pb-6 mb-6">
                                 <div className="inline-block bg-[#991b1b] text-white text-xs uppercase font-bold tracking-widest px-3 py-0.5 mb-2 rounded-full">
-                                    दरपत्रक / QUOTATION
+                                    QUOTATION
                                 </div>
                                 <h1 className="text-3xl font-bold text-[#991b1b] mb-2 tracking-wide font-serif">
                                     {currentStore.name}
@@ -567,19 +566,18 @@ const QuotationView = () => {
                             {/* Meta & Customer Block */}
                             <div className="grid grid-cols-2 gap-4 mb-6 bg-red-50/40 p-4 rounded-lg border border-red-100">
                                 <div>
-                                    <h3 className="text-[#991b1b] text-xs font-bold uppercase tracking-wider mb-1">ग्राहक / Quotation For:</h3>
+                                    <h3 className="text-[#991b1b] text-xs font-bold uppercase tracking-wider mb-1">Quotation For:</h3>
                                     <div className="text-gray-900 font-bold text-base">{customer?.name || quotation.customerName || 'Valued Customer'}</div>
                                     <div className="text-gray-700 text-xs mt-1 whitespace-pre-line">{customer?.address || "No address provided"}</div>
                                     {customer?.phone && <div className="text-gray-700 text-xs mt-0.5">मोबा.: {customer.phone}</div>}
                                 </div>
                                 <div className="text-right flex flex-col justify-between">
                                     <div>
-                                        <span className="text-xs text-gray-500 uppercase font-bold">कोटेशन क्र. / Quote No.:</span>
-                                        <div className="text-[#991b1b] font-bold text-base"># {quotation.quotationNumber || quotation.id}</div>
+                                        <span className="text-xs text-gray-500 uppercase font-bold">Serial number:</span>
+                                        <div className="text-[#991b1b] font-bold text-base"># {formattedQuoteNo}</div>
                                     </div>
                                     <div className="text-xs text-gray-600 space-y-1">
                                         <div><span className="font-semibold text-gray-800">दिनांक / Date:</span> {quotation.date ? format(new Date(quotation.date), 'dd-MM-yyyy') : '-'}</div>
-                                        {quotation.validUntil && <div><span className="font-semibold text-gray-800">वैधता / Valid Until:</span> {format(new Date(quotation.validUntil), 'dd-MM-yyyy')}</div>}
                                     </div>
                                 </div>
                             </div>
@@ -610,10 +608,8 @@ const QuotationView = () => {
 
                             {/* Totals Block (NO Bank Details) */}
                             <div className="flex justify-between items-start pt-4 border-t-2 border-[#991b1b]">
-                                {/* Left Side: Empty space or notes (Bank Details Removed) */}
-                                <div className="w-1/2 text-xs text-gray-500 italic pr-4">
-                                    * हे अंदाजपत्रक ग्राहकाच्या मागणीनुसार तयार करण्यात आले आहे.<br/>
-                                    * वस्तूंचे दर ३० दिवसांपर्यंत ग्राह्य राहतील.
+                                <div className="w-1/2 text-xs text-gray-700 font-medium pr-4">
+                                    <strong>विशेष टीप:</strong> हे अधिकृत दरपत्रक सरकारी / खासगी टेंडरसाठी ग्राह्य आहे.
                                 </div>
 
                                 <div className="w-72 space-y-2 bg-red-50/50 p-4 rounded-md border border-red-100">
@@ -640,14 +636,14 @@ const QuotationView = () => {
                                     <ul className="list-disc list-inside space-y-0.5">
                                         <li>एकदा विक्री केलेला माल परत घेतला जाणार नाही.</li>
                                         <li>सर्व वाद छत्रपती संभाजीनगर न्यायालयाच्या अंतर्गत राहतील.</li>
-                                        <li>ई. व ओ. ई.</li>
+                                        <li>E&OE</li>
                                     </ul>
                                 </div>
 
                                 <div className="text-right">
                                     <div className="text-[#991b1b] font-bold text-sm mb-14">करिता, {currentStore.name}</div>
                                     <div className="border-t border-[#991b1b] pt-1.5 text-gray-700 text-xs font-bold inline-block min-w-[180px]">
-                                        ऑथराइज्ड सही / Signature
+                                        Signature
                                     </div>
                                 </div>
                             </div>
@@ -661,7 +657,7 @@ const QuotationView = () => {
                             <div className="bg-emerald-50/70 border-2 border-[#047857] rounded-xl p-6 mb-6 flex justify-between items-center">
                                 <div>
                                     <div className="inline-block bg-[#047857] text-white text-[11px] font-bold uppercase tracking-wider px-3 py-1 rounded-md mb-2">
-                                        अंदाजपत्रक / QUOTATION
+                                        QUOTATION
                                     </div>
                                     <h1 className="text-2xl font-black text-[#065f46] mb-1">
                                         {currentStore.name}
@@ -674,8 +670,8 @@ const QuotationView = () => {
                                     </p>
                                 </div>
                                 <div className="text-right bg-white p-4 rounded-lg border border-emerald-200 shadow-sm min-w-[180px]">
-                                    <div className="text-xs text-emerald-800 font-bold uppercase">कोटेशन क्रमांक</div>
-                                    <div className="text-lg font-extrabold text-[#047857]"># {quotation.quotationNumber || quotation.id}</div>
+                                    <div className="text-xs text-emerald-800 font-bold uppercase">Serial number</div>
+                                    <div className="text-lg font-extrabold text-[#047857]"># {formattedQuoteNo}</div>
                                     <div className="mt-2 text-xs text-gray-600">
                                         <div><strong>दिनांक:</strong> {quotation.date ? format(new Date(quotation.date), 'dd-MM-yyyy') : '-'}</div>
                                     </div>
@@ -716,7 +712,6 @@ const QuotationView = () => {
 
                             {/* Totals (NO Bank Details) */}
                             <div className="flex justify-between items-start pt-4 border-t-2 border-[#047857]">
-                                {/* Left Side: Empty Space / Notes (Bank Details Removed) */}
                                 <div className="w-1/2 text-xs text-gray-500">
                                     <div className="bg-emerald-50/50 p-3 rounded-md border border-emerald-100 text-emerald-900">
                                         <strong>विशेष टीप:</strong> हे अधिकृत दरपत्रक सरकारी / खासगी टेंडरसाठी ग्राह्य आहे.
@@ -745,9 +740,8 @@ const QuotationView = () => {
                                 <div className="w-1/2 text-gray-600 text-xs">
                                     <h4 className="font-bold text-[#047857] mb-1">नियम व अटी:</h4>
                                     <ol className="list-decimal list-inside space-y-0.5">
-                                        <li>दरपत्रक ३० दिवसांसाठी लागू राहील.</li>
                                         <li>माल बुकिंगनंतर डिलिव्हरी दिली जाईल.</li>
-                                        <li>क्षेत्र: छत्रपती संभाजीनगर.</li>
+                                        <li>सर्व वाद छत्रपती संभाजीनगर न्यायालयाच्या अंतर्गत राहतील.</li>
                                     </ol>
                                 </div>
 

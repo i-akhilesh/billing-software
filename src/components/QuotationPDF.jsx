@@ -217,6 +217,15 @@ const styles = StyleSheet.create({
     }
 });
 
+const formatQuoteNumber = (num, fallbackId) => {
+    const src = num || fallbackId || '';
+    const match = String(src).match(/\d+/);
+    if (match) {
+        return `QT-${match[0].padStart(3, '0')}`;
+    }
+    return src ? `QT-${src}` : 'QT-001';
+};
+
 const QuotationPDF = ({ quotation, customer, storeInfo, markupPercent = 0 }) => {
     const markupFactor = 1 + (parseFloat(markupPercent) || 0) / 100;
 
@@ -237,6 +246,7 @@ const QuotationPDF = ({ quotation, customer, storeInfo, markupPercent = 0 }) => 
 
     const discount = parseFloat(quotation?.discount) || 0;
     const grandTotal = Math.max(0, subtotal - discount);
+    const formattedQuoteNo = formatQuoteNumber(quotation?.quotationNumber, quotation?.id);
 
     return (
         <Document>
@@ -246,16 +256,14 @@ const QuotationPDF = ({ quotation, customer, storeInfo, markupPercent = 0 }) => 
                     <View style={styles.companyDetails}>
                         <Text style={styles.companyName}>{storeInfo.name}</Text>
                         <Text style={styles.companyAddress}>
-                            {storeInfo.address}{"\n"}
-                            {storeInfo.gstin ? `GSTIN: ${storeInfo.gstin}\n` : ''}
-                            Phone: {storeInfo.phone}
+                            {storeInfo.address}
                         </Text>
                     </View>
                     <View style={styles.quoteDetails}>
                         <Text style={styles.title}>QUOTATION</Text>
                         <View style={styles.detailRow}>
-                            <Text style={styles.detailLabel}>Quote #:</Text>
-                            <Text style={styles.detailValue}>{quotation.quotationNumber || quotation.id}</Text>
+                            <Text style={styles.detailLabel}>Serial number:</Text>
+                            <Text style={styles.detailValue}># {formattedQuoteNo}</Text>
                         </View>
                         <View style={styles.detailRow}>
                             <Text style={styles.detailLabel}>Date:</Text>
@@ -263,14 +271,6 @@ const QuotationPDF = ({ quotation, customer, storeInfo, markupPercent = 0 }) => 
                                 {quotation.date ? format(new Date(quotation.date), 'dd MMM yyyy') : '-'}
                             </Text>
                         </View>
-                        {quotation.validUntil && (
-                            <View style={styles.detailRow}>
-                                <Text style={styles.detailLabel}>Valid Until:</Text>
-                                <Text style={styles.detailValue}>
-                                    {format(new Date(quotation.validUntil), 'dd MMM yyyy')}
-                                </Text>
-                            </View>
-                        )}
                     </View>
                 </View>
 
@@ -309,17 +309,9 @@ const QuotationPDF = ({ quotation, customer, storeInfo, markupPercent = 0 }) => 
                 {/* Bottom Section */}
                 <View style={styles.bottomSection}>
                     <View style={styles.bankDetails}>
-                        {storeInfo.bankName && (
-                            <>
-                                <Text style={{ fontSize: 10, fontWeight: 'bold', color: '#1d4ed8', marginBottom: 3 }}>Bank Details:</Text>
-                                <Text style={{ fontSize: 9, color: '#555555', lineHeight: 1.4 }}>
-                                    Bank Name: {storeInfo.bankName}{"\n"}
-                                    Account No.: {storeInfo.accountNo}{"\n"}
-                                    Branch: {storeInfo.branch}{"\n"}
-                                    IFSC Code: {storeInfo.ifsc}
-                                </Text>
-                            </>
-                        )}
+                        <Text style={{ fontSize: 9, color: '#1d4ed8', fontWeight: 'bold', lineHeight: 1.4 }}>
+                            Special Note: This official quotation is valid for government / private tenders.
+                        </Text>
                     </View>
 
                     <View style={styles.totalsBox}>
@@ -347,15 +339,14 @@ const QuotationPDF = ({ quotation, customer, storeInfo, markupPercent = 0 }) => 
                 <View style={styles.footerSection}>
                     <View style={styles.terms}>
                         <Text style={{ fontWeight: 'bold', marginBottom: 3 }}>Terms & Conditions:</Text>
-                        <Text>1. Quotation valid for 30 days from date of issue.</Text>
-                        <Text>2. Goods once sold will be subject to warranty terms.</Text>
-                        <Text>3. Subject to local jurisdiction.</Text>
-                        <Text>4. E&OE</Text>
+                        <Text>1. Goods once sold will be subject to warranty terms.</Text>
+                        <Text>2. Subject to local jurisdiction.</Text>
+                        <Text>3. E&OE</Text>
                     </View>
 
                     <View style={styles.signatureBox}>
                         <Text style={styles.signatureCompany}>{storeInfo.name}</Text>
-                        <Text style={styles.signatureLine}>Authorised Signature</Text>
+                        <Text style={styles.signatureLine}>Signature</Text>
                     </View>
                 </View>
 
