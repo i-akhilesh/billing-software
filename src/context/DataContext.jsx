@@ -7,79 +7,144 @@ export const useData = () => {
     return useContext(DataContext);
 };
 
+// Helper to safely load backup data from localStorage
+const getBackup = (key) => {
+    try {
+        const item = localStorage.getItem(key);
+        return item ? JSON.parse(item) : [];
+    } catch (e) {
+        return [];
+    }
+};
+
 export const DataProvider = ({ children }) => {
-    const [customers, setCustomers] = useState([]);
-    const [items, setItems] = useState([]);
-    const [invoices, setInvoices] = useState([]);
-    const [quotations, setQuotations] = useState([]);
+    // Initialize with local backups if available for instant display
+    const [customers, setCustomers] = useState(() => getBackup('customers_backup'));
+    const [items, setItems] = useState(() => getBackup('items_backup'));
+    const [invoices, setInvoices] = useState(() => getBackup('invoices_backup'));
+    const [quotations, setQuotations] = useState(() => getBackup('quotations_backup'));
+
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [isOnline, setIsOnline] = useState(typeof navigator !== 'undefined' ? navigator.onLine : true);
+    const [syncStatus, setSyncStatus] = useState('syncing'); // 'synced' | 'syncing' | 'offline' | 'error'
+    const [lastSyncedAt, setLastSyncedAt] = useState(null);
+    const [hasPendingWrites, setHasPendingWrites] = useState(false);
 
+    // Monitor Online/Offline window events
+    useEffect(() => {
+        const handleOnline = () => {
+            setIsOnline(true);
+            setSyncStatus('syncing');
+            // Trigger background sync when coming online
+            dbService.syncLocalToCloud().catch(err => console.error("Online re-sync error:", err));
+        };
+
+        const handleOffline = () => {
+            setIsOnline(false);
+            setSyncStatus('offline');
+        };
+
+        window.addEventListener('online', handleOnline);
+        window.addEventListener('offline', handleOffline);
+
+        return () => {
+            window.removeEventListener('online', handleOnline);
+            window.removeEventListener('offline', handleOffline);
+        };
+    }, []);
+
+    // Main real-time Firestore sync subscriptions
     useEffect(() => {
         setLoading(true);
         let loadedFlags = { customers: false, items: false, invoices: false, quotations: false };
+        let metadataMap = { customers: null, items: null, invoices: null, quotations: null };
 
-        const checkFullyLoaded = () => {
-            if (Object.values(loadedFlags).every(Boolean)) {
+        const updateSyncState = () => {
+            const allLoaded = Object.values(loadedFlags).every(Boolean);
+            if (allLoaded) {
                 setLoading(false);
+            }
+
+            const anyPending = Object.values(metadataMap).some(m => m && m.hasPendingWrites);
+            setHasPendingWrites(anyPending);
+
+            if (!navigator.onLine) {
+                setSyncStatus('offline');
+            } else if (anyPending) {
+                setSyncStatus('syncing');
+            } else if (allLoaded) {
+                setSyncStatus('synced');
+                setLastSyncedAt(new Date());
             }
         };
 
         const unsubscribeCustomers = dbService.subscribeCustomers(
-            (data) => {
+            (data, metadata) => {
                 setCustomers(data || []);
                 loadedFlags.customers = true;
-                checkFullyLoaded();
+                metadataMap.customers = metadata;
+                updateSyncState();
             },
             (err) => {
                 console.error("Customers sync error:", err);
                 setError('Failed to sync customers');
                 loadedFlags.customers = true;
-                checkFullyLoaded();
+                setSyncStatus('error');
+                updateSyncState();
             }
         );
 
         const unsubscribeItems = dbService.subscribeItems(
-            (data) => {
+            (data, metadata) => {
                 setItems(data || []);
                 loadedFlags.items = true;
-                checkFullyLoaded();
+                metadataMap.items = metadata;
+                updateSyncState();
             },
             (err) => {
                 console.error("Items sync error:", err);
                 setError('Failed to sync items');
                 loadedFlags.items = true;
-                checkFullyLoaded();
+                setSyncStatus('error');
+                updateSyncState();
             }
         );
 
         const unsubscribeInvoices = dbService.subscribeInvoices(
-            (data) => {
+            (data, metadata) => {
                 setInvoices(data || []);
                 loadedFlags.invoices = true;
-                checkFullyLoaded();
+                metadataMap.invoices = metadata;
+                updateSyncState();
             },
             (err) => {
                 console.error("Invoices sync error:", err);
                 setError('Failed to sync invoices');
                 loadedFlags.invoices = true;
-                checkFullyLoaded();
+                setSyncStatus('error');
+                updateSyncState();
             }
         );
 
         const unsubscribeQuotations = dbService.subscribeQuotations(
-            (data) => {
+            (data, metadata) => {
                 setQuotations(data || []);
                 loadedFlags.quotations = true;
-                checkFullyLoaded();
+                metadataMap.quotations = metadata;
+                updateSyncState();
             },
             (err) => {
                 console.error("Quotations sync error:", err);
                 setError('Failed to sync quotations');
                 loadedFlags.quotations = true;
-                checkFullyLoaded();
+                setSyncStatus('error');
+                updateSyncState();
             }
         );
+
+        // Auto sync local storage data to Cloud on startup
+        dbService.syncLocalToCloud().catch(err => console.error("Initial auto-sync error:", err));
 
         return () => {
             unsubscribeCustomers();
@@ -87,6 +152,21 @@ export const DataProvider = ({ children }) => {
             unsubscribeInvoices();
             unsubscribeQuotations();
         };
+    }, []);
+
+    // Manual Force Sync
+    const forceSync = useCallback(async () => {
+        setSyncStatus('syncing');
+        try {
+            const res = await dbService.syncLocalToCloud();
+            setLastSyncedAt(new Date());
+            setSyncStatus(navigator.onLine ? 'synced' : 'offline');
+            return res;
+        } catch (err) {
+            console.error("Force sync failed:", err);
+            setSyncStatus('error');
+            throw err;
+        }
     }, []);
 
     // Helper CRUD actions - Firestore onSnapshot updates the React state automatically
@@ -109,8 +189,8 @@ export const DataProvider = ({ children }) => {
     const deleteQuotation = async (id) => dbService.deleteQuotation(id);
 
     const refreshData = useCallback(() => {
-        // Data is always synced in real-time via onSnapshot subscriptions.
-    }, []);
+        return forceSync();
+    }, [forceSync]);
 
     const value = {
         customers,
@@ -119,6 +199,11 @@ export const DataProvider = ({ children }) => {
         quotations,
         loading,
         error,
+        isOnline,
+        syncStatus,
+        lastSyncedAt,
+        hasPendingWrites,
+        forceSync,
         refreshData,
         addCustomer,
         updateCustomer,
@@ -142,3 +227,4 @@ export const DataProvider = ({ children }) => {
         </DataContext.Provider>
     );
 };
+

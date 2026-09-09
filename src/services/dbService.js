@@ -303,10 +303,12 @@ const dbService = {
     // --- Real-time Subscriptions ---
     subscribeCustomers: (onSuccess, onError) => {
         const colRef = collection(db, COLLECTIONS.CUSTOMERS);
-        return onSnapshot(colRef, (snapshot) => {
+        return onSnapshot(colRef, { includeMetadataChanges: true }, (snapshot) => {
             const list = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
             list.sort((a, b) => (a.name || '').localeCompare(b.name || '', undefined, { sensitivity: 'base' }));
-            onSuccess(list);
+            // Backup to local storage for offline fallback
+            try { localStorage.setItem('customers_backup', JSON.stringify(list)); } catch (e) {}
+            onSuccess(list, snapshot.metadata);
         }, (error) => {
             console.error("Error in customers subscription:", error);
             if (onError) onError(error);
@@ -315,10 +317,11 @@ const dbService = {
 
     subscribeItems: (onSuccess, onError) => {
         const colRef = collection(db, COLLECTIONS.ITEMS);
-        return onSnapshot(colRef, (snapshot) => {
+        return onSnapshot(colRef, { includeMetadataChanges: true }, (snapshot) => {
             const list = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
             list.sort((a, b) => (a.name || '').localeCompare(b.name || '', undefined, { sensitivity: 'base' }));
-            onSuccess(list);
+            try { localStorage.setItem('items_backup', JSON.stringify(list)); } catch (e) {}
+            onSuccess(list, snapshot.metadata);
         }, (error) => {
             console.error("Error in items subscription:", error);
             if (onError) onError(error);
@@ -327,10 +330,11 @@ const dbService = {
 
     subscribeInvoices: (onSuccess, onError) => {
         const colRef = collection(db, COLLECTIONS.INVOICES);
-        return onSnapshot(colRef, (snapshot) => {
+        return onSnapshot(colRef, { includeMetadataChanges: true }, (snapshot) => {
             const list = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
             list.sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
-            onSuccess(list);
+            try { localStorage.setItem('invoices_backup', JSON.stringify(list)); } catch (e) {}
+            onSuccess(list, snapshot.metadata);
         }, (error) => {
             console.error("Error in invoices subscription:", error);
             if (onError) onError(error);
@@ -339,14 +343,55 @@ const dbService = {
 
     subscribeQuotations: (onSuccess, onError) => {
         const colRef = collection(db, COLLECTIONS.QUOTATIONS);
-        return onSnapshot(colRef, (snapshot) => {
+        return onSnapshot(colRef, { includeMetadataChanges: true }, (snapshot) => {
             const list = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
             list.sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
-            onSuccess(list);
+            try { localStorage.setItem('quotations_backup', JSON.stringify(list)); } catch (e) {}
+            onSuccess(list, snapshot.metadata);
         }, (error) => {
             console.error("Error in quotations subscription:", error);
             if (onError) onError(error);
         });
+    },
+
+    // --- Automatic Sync Helper ---
+    syncLocalToCloud: async () => {
+        try {
+            const customers = JSON.parse(localStorage.getItem('customers') || '[]');
+            const items = JSON.parse(localStorage.getItem('items') || '[]');
+            const invoices = JSON.parse(localStorage.getItem('invoices') || '[]');
+
+            let syncedCount = 0;
+
+            if (customers.length > 0) {
+                await Promise.all(customers.map(async (c) => {
+                    const docRef = doc(db, COLLECTIONS.CUSTOMERS, c.id);
+                    await setDoc(docRef, c, { merge: true });
+                    syncedCount++;
+                }));
+            }
+
+            if (items.length > 0) {
+                await Promise.all(items.map(async (i) => {
+                    const docRef = doc(db, COLLECTIONS.ITEMS, i.id);
+                    await setDoc(docRef, i, { merge: true });
+                    syncedCount++;
+                }));
+            }
+
+            if (invoices.length > 0) {
+                await Promise.all(invoices.map(async (inv) => {
+                    const docRef = doc(db, COLLECTIONS.INVOICES, inv.id);
+                    await setDoc(docRef, inv, { merge: true });
+                    syncedCount++;
+                }));
+            }
+
+            return { success: true, count: syncedCount };
+        } catch (error) {
+            console.error("Auto sync local to cloud error:", error);
+            return { success: false, error };
+        }
     }
 };
 

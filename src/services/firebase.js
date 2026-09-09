@@ -1,5 +1,5 @@
 import { initializeApp } from 'firebase/app';
-import { getFirestore } from 'firebase/firestore';
+import { getFirestore, enableMultiTabIndexedDbPersistence, enableIndexedDbPersistence } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
 import { getAnalytics } from "firebase/analytics";
 
@@ -16,10 +16,21 @@ const firebaseConfig = {
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app);
+export const analytics = typeof window !== 'undefined' ? getAnalytics(app) : null;
 
 // Initialize Services
 export const db = getFirestore(app);
 export const auth = getAuth(app);
+
+// Enable offline persistence for Firestore
+if (typeof window !== 'undefined') {
+    enableMultiTabIndexedDbPersistence(db).catch((err) => {
+        if (err.code === 'failed-precondition') {
+            enableIndexedDbPersistence(db).catch((e) => console.warn('Firestore persistence failed:', e));
+        } else if (err.code === 'unimplemented') {
+            console.warn('The current browser does not support Firestore persistence');
+        }
+    });
+}
 
 export default app;
