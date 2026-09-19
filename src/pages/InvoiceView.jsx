@@ -217,7 +217,7 @@ const InvoiceView = () => {
                             <div className="text-[#d97706] text-xs italic max-w-[200px] ml-auto mb-2 leading-tight">
                                 Composition dealer is not eligible to collect tax on supply
                             </div>
-                            <p className="text-[#4b5563] font-medium"># {invoice.invoiceNumber}</p>
+                            <p className="text-[#4b5563] font-medium"><span className="text-xs text-[#6b7280] uppercase font-bold">Serial No: </span>#{invoice.invoiceNumber}</p>
                             <div className="mt-4 text-sm text-[#6b7280]">
                                 <div><span className="font-medium text-[#374151]">Date:</span> {format(new Date(invoice.date), 'dd-MM-yyyy')}</div>
                             </div>
@@ -238,7 +238,8 @@ const InvoiceView = () => {
                     <table className="w-full text-left text-sm mb-6 print:mb-2">
                         <thead className="bg-[#f9fafb] text-[#374151] font-medium border-y border-[#e5e7eb]">
                             <tr>
-                                <th className="px-4 py-3">Item</th>
+                                <th className="px-3 py-3 w-12 text-center">Sr.</th>
+                                <th className="px-4 py-3">Item Description</th>
                                 <th className="px-4 py-3 text-center">Qty</th>
                                 <th className="px-4 py-3 text-right">Price</th>
                                 <th className="px-4 py-3 text-right">Amount</th>
@@ -253,6 +254,7 @@ const InvoiceView = () => {
 
                                 return (
                                     <tr key={index}>
+                                        <td className="px-3 py-1.5 text-center text-gray-500 font-mono text-xs">{index + 1}</td>
                                         <td className="px-4 py-1.5">
                                             <div className="font-medium text-[#1f2937]">{itemName}</div>
                                         </td>

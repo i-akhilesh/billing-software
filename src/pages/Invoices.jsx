@@ -3,7 +3,7 @@ import { useData } from '../context/DataContext';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { Link, useNavigate } from 'react-router-dom';
-import { Plus, Search, Edit2, Trash2, FileText, Eye, Layers } from 'lucide-react';
+import { Plus, Search, Edit2, Trash2, FileText, Eye, Layers, FileSpreadsheet } from 'lucide-react';
 import { format } from 'date-fns';
 import InvoiceStats from '../components/InvoiceStats';
 
@@ -60,14 +60,26 @@ const Invoices = () => {
     return (
         <div>
             <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
-                <h1 className="text-2xl font-bold text-gray-800">Invoices</h1>
-                <Link
-                    to="/invoices/new"
-                    className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 flex items-center gap-2"
-                >
-                    <Plus className="h-4 w-4" />
-                    New Invoice
-                </Link>
+                <div>
+                    <h1 className="text-2xl font-bold text-gray-800">Invoices</h1>
+                    <p className="text-xs text-gray-500">Manage billing invoices & sales records</p>
+                </div>
+                <div className="flex items-center gap-3">
+                    <Link
+                        to="/reports"
+                        className="bg-purple-50 text-purple-700 border border-purple-200 px-3.5 py-2 rounded-md hover:bg-purple-100 flex items-center gap-2 text-sm font-medium transition-colors"
+                    >
+                        <FileSpreadsheet className="h-4 w-4 text-purple-600" />
+                        CA Reports
+                    </Link>
+                    <Link
+                        to="/invoices/new"
+                        className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 flex items-center gap-2 text-sm font-medium"
+                    >
+                        <Plus className="h-4 w-4" />
+                        New Invoice
+                    </Link>
+                </div>
             </div>
 
             <InvoiceStats invoices={filteredInvoices} />

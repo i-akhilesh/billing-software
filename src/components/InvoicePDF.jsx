@@ -167,10 +167,11 @@ const styles = StyleSheet.create({
         padding: 4,
         fontSize: 9
     },
-    colDesc: { width: '50%' },
+    colSrNo: { width: '8%', textAlign: 'center' },
+    colDesc: { width: '47%' },
     colQty: { width: '10%', textAlign: 'center' },
-    colPrice: { width: '20%', textAlign: 'right' },
-    colTotal: { width: '20%', textAlign: 'right' },
+    colPrice: { width: '17%', textAlign: 'right' },
+    colTotal: { width: '18%', textAlign: 'right' },
 
     grandTotalText: {
         fontSize: 14,
@@ -340,6 +341,7 @@ const InvoicePDF = ({ invoice, customer, items }) => {
                 {/* Items Table Header */}
                 <View style={styles.table}>
                     <View style={styles.tableHeader}>
+                        <Text style={styles.colSrNo}>Sr.</Text>
                         <Text style={styles.colDesc}>Item Description</Text>
                         <Text style={styles.colQty}>Qty</Text>
                         <Text style={styles.colPrice}>Price</Text>
@@ -356,6 +358,7 @@ const InvoicePDF = ({ invoice, customer, items }) => {
 
                         return (
                             <View style={styles.tableRow} key={index}>
+                                <Text style={styles.colSrNo}>{index + 1}</Text>
                                 <View style={styles.colDesc}>
                                     <Text style={{ fontWeight: 'bold' }}>{convertLegacyMarathi(itemDetails.name) || 'Item'}</Text>
                                 </View>

@@ -1,6 +1,6 @@
 
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Users, Package, FileText, Settings, ClipboardList, FileCheck } from 'lucide-react';
+import { LayoutDashboard, Users, Package, FileText, Settings, ClipboardList, FileCheck, BarChart3 } from 'lucide-react';
 
 const Sidebar = () => {
     const navItems = [
@@ -10,6 +10,7 @@ const Sidebar = () => {
         { name: 'Inventory', icon: ClipboardList, path: '/inventory' },
         { name: 'Invoices', icon: FileText, path: '/invoices' },
         { name: 'Quotations', icon: FileCheck, path: '/quotations' },
+        { name: 'Reports', icon: BarChart3, path: '/reports' },
     ];
 
     return (

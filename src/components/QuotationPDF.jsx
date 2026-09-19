@@ -128,10 +128,11 @@ const styles = StyleSheet.create({
         borderBottomWidth: 1,
         borderBottomColor: '#F1F5F9'
     },
-    colDesc: { width: '50%' },
+    colSrNo: { width: '8%', textAlign: 'center' },
+    colDesc: { width: '47%' },
     colQty: { width: '10%', textAlign: 'center' },
-    colPrice: { width: '20%', textAlign: 'right' },
-    colTotal: { width: '20%', textAlign: 'right' },
+    colPrice: { width: '17%', textAlign: 'right' },
+    colTotal: { width: '18%', textAlign: 'right' },
     bottomSection: {
         flexDirection: 'row',
         marginTop: 10,
@@ -288,6 +289,7 @@ const QuotationPDF = ({ quotation, customer, storeInfo, markupPercent = 0 }) => 
                 {/* Items Table */}
                 <View style={styles.table}>
                     <View style={styles.tableHeader}>
+                        <Text style={styles.colSrNo}>Sr.</Text>
                         <Text style={styles.colDesc}>Item Description</Text>
                         <Text style={styles.colQty}>Qty</Text>
                         <Text style={styles.colPrice}>Rate (₹)</Text>
@@ -296,6 +298,7 @@ const QuotationPDF = ({ quotation, customer, storeInfo, markupPercent = 0 }) => 
 
                     {itemRows.map((item, index) => (
                         <View style={styles.tableRow} key={index}>
+                            <Text style={styles.colSrNo}>{index + 1}</Text>
                             <View style={styles.colDesc}>
                                 <Text style={{ fontWeight: 'bold' }}>{convertLegacyMarathi(item.name)}</Text>
                             </View>
