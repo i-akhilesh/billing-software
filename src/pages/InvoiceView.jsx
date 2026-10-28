@@ -3,11 +3,12 @@ import { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useData } from '../context/DataContext';
 import { useToast } from '../context/ToastContext';
-import { ArrowLeft, Download, Printer, Share2, Banknote } from 'lucide-react';
+import { ArrowLeft, Download, Printer, Share2, Banknote, Layers } from 'lucide-react';
 import { format } from 'date-fns';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 import PaymentModal from '../components/PaymentModal';
+import { getQuotationNumberFromInvoice } from '../utils/quotationUtils';
 
 const numberToWords = (num) => {
     const a = ['', 'One ', 'Two ', 'Three ', 'Four ', 'Five ', 'Six ', 'Seven ', 'Eight ', 'Nine ', 'Ten ', 'Eleven ', 'Twelve ', 'Thirteen ', 'Fourteen ', 'Fifteen ', 'Sixteen ', 'Seventeen ', 'Eighteen ', 'Nineteen '];
@@ -26,7 +27,7 @@ const numberToWords = (num) => {
 const InvoiceView = () => {
     const { id } = useParams();
     const navigate = useNavigate();
-    const { invoices, customers, items } = useData();
+    const { invoices, quotations, customers, items, addQuotation } = useData();
     const [invoice, setInvoice] = useState(null);
     const [customer, setCustomer] = useState(null);
     const invoiceRef = useRef();
@@ -153,6 +154,45 @@ const InvoiceView = () => {
     const totalPaid = (invoice.payments || []).reduce((sum, p) => sum + (parseFloat(p.amount) || 0), 0);
     const balanceDue = totalAmount - totalPaid;
 
+    const targetQuoteNo = getQuotationNumberFromInvoice(invoice.invoiceNumber);
+    const existingQuotation = (quotations || []).find(q =>
+        q.invoiceId === invoice.id ||
+        q.invoiceNumber === invoice.invoiceNumber ||
+        (q.notes && q.notes.includes(invoice.invoiceNumber)) ||
+        (q.quotationNumber && q.quotationNumber === targetQuoteNo)
+    );
+
+    const handleQuotationAction = async () => {
+        if (existingQuotation) {
+            navigate(`/quotations/${existingQuotation.id}`);
+            return;
+        }
+
+        try {
+            const created = await addQuotation({
+                quotationNumber: targetQuoteNo,
+                invoiceId: invoice.id,
+                invoiceNumber: invoice.invoiceNumber,
+                date: new Date().toISOString(),
+                validUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+                customerId: invoice.customerId || '',
+                customerName: customer?.name || invoice.customerName || '',
+                items: invoice.items || [],
+                subtotal: invoice.subtotal || 0,
+                discount: invoice.discount || 0,
+                taxTotal: invoice.taxTotal || 0,
+                total: invoice.total || 0,
+                status: 'Active',
+                notes: `Converted from Invoice ${invoice.invoiceNumber}`
+            });
+            addToast(`Quotation ${targetQuoteNo} created for Invoice ${invoice.invoiceNumber}!`, 'success');
+            navigate(`/quotations/${created.id}`);
+        } catch (err) {
+            console.error(err);
+            addToast('Failed to create quotation', 'error');
+        }
+    };
+
     return (
         <div className="max-w-4xl mx-auto mb-10 print:mb-0">
             <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4 print:hidden">
@@ -170,7 +210,15 @@ const InvoiceView = () => {
                         {invoice.status}
                     </span>
                 </div>
-                <div className="flex gap-3">
+                <div className="flex flex-wrap gap-3">
+                    <button
+                        onClick={handleQuotationAction}
+                        className="px-4 py-2 border border-purple-200 bg-purple-50 text-purple-700 hover:bg-purple-100 rounded-md flex items-center gap-2 font-medium"
+                        title={existingQuotation ? `View 3 Quotations (${targetQuoteNo})` : `Generate 3 Quotations (${targetQuoteNo})`}
+                    >
+                        <Layers className="h-4 w-4" />
+                        <span>{existingQuotation ? `3 Quotations (${targetQuoteNo})` : `Quotation (${targetQuoteNo})`}</span>
+                    </button>
                     <button
                         onClick={() => setIsPaymentModalOpen(true)}
                         className="px-4 py-2 border border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100 rounded-md flex items-center gap-2"

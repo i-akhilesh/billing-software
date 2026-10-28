@@ -14,6 +14,8 @@ import {
     onSnapshot
 } from 'firebase/firestore';
 
+import { getQuotationNumberFromInvoice } from '../utils/quotationUtils';
+
 // Collection Names
 const COLLECTIONS = {
     CUSTOMERS: 'customers',
@@ -41,7 +43,7 @@ const generateNextId = async (collectionName, prefix) => {
                 const snapshot = await getDocs(q);
                 let maxId = 0;
                 snapshot.forEach(doc => {
-                    // Extract number from id (e.g., 'c5' -> 5)
+                    // Extract number from id (e.g., 'c5' -> 5, 'QT-008' -> 8)
                     const idPart = parseInt(doc.id.replace(prefix, ''));
                     if (!isNaN(idPart) && idPart > maxId) {
                         maxId = idPart;
@@ -51,12 +53,14 @@ const generateNextId = async (collectionName, prefix) => {
             }
 
             transaction.set(counterRef, { count: nextCount });
-            return `${prefix}${nextCount}`;
+            const formattedCount = prefix.endsWith('-') ? String(nextCount).padStart(3, '0') : nextCount;
+            return `${prefix}${formattedCount}`;
         });
     } catch (e) {
         console.error("Error generating ID:", e);
         // Fallback to random if transaction fails (avoids blocking app)
-        return `${prefix}_${Date.now()}`;
+        const fallbackNum = Date.now().toString().slice(-3);
+        return prefix.endsWith('-') ? `${prefix}${fallbackNum.padStart(3, '0')}` : `${prefix}_${Date.now()}`;
     }
 };
 
@@ -264,12 +268,15 @@ const dbService = {
 
     createQuotation: async (data) => {
         try {
-            const newId = await generateNextId(COLLECTIONS.QUOTATIONS, 'QT-');
+            const quotationNumber = data.quotationNumber ||
+                (data.invoiceNumber ? getQuotationNumberFromInvoice(data.invoiceNumber) : null) ||
+                await generateNextId(COLLECTIONS.QUOTATIONS, 'QT-');
+            const newId = data.id || quotationNumber;
             const docRef = doc(db, COLLECTIONS.QUOTATIONS, newId);
             const quotationData = {
                 ...data,
                 id: newId,
-                quotationNumber: data.quotationNumber || newId
+                quotationNumber: quotationNumber
             };
             await setDoc(docRef, quotationData);
             return quotationData;

@@ -4,6 +4,7 @@ import { useToast } from '../context/ToastContext';
 import { Link, useNavigate } from 'react-router-dom';
 import { Plus, Search, Edit2, Trash2, FileCheck, Eye, Layers, Copy } from 'lucide-react';
 import { format } from 'date-fns';
+import { getQuotationNumberFromInvoice, formatQuoteNumber } from '../utils/quotationUtils';
 
 const Quotations = () => {
     const { quotations, invoices, customers, deleteQuotation, addQuotation, loading } = useData();
@@ -50,11 +51,12 @@ const Quotations = () => {
         if (!inv) return;
 
         try {
-            const quoteNumDigits = (inv.invoiceNumber || '').match(/\d+/);
-            const quotationNumber = quoteNumDigits ? `QT-${quoteNumDigits[0].padStart(3, '0')}` : `QT-${Date.now().toString().slice(-4)}`;
+            const quotationNumber = getQuotationNumberFromInvoice(inv.invoiceNumber);
 
             const quotationData = {
                 quotationNumber,
+                invoiceId: inv.id,
+                invoiceNumber: inv.invoiceNumber,
                 date: new Date().toISOString(),
                 customerId: inv.customerId || '',
                 customerName: getCustomerName(inv.customerId, inv.customerName),
@@ -68,7 +70,7 @@ const Quotations = () => {
             };
 
             const created = await addQuotation(quotationData);
-            addToast('Quotation created from invoice!', 'success');
+            addToast(`Quotation ${quotationNumber} created from Invoice ${inv.invoiceNumber}!`, 'success');
             setIsConvertModalOpen(false);
             navigate(`/quotations/${created.id}`);
         } catch (err) {
@@ -154,7 +156,7 @@ const Quotations = () => {
                                             <td className="px-6 py-3 font-medium text-blue-600 dark:text-blue-400 flex items-center gap-2">
                                                 <FileCheck className="h-4 w-4 text-purple-500" />
                                                 <Link to={`/quotations/${q.id}`} className="hover:underline font-mono">
-                                                    {q.quotationNumber || q.id}
+                                                    {formatQuoteNumber(q.quotationNumber, q.id, q)}
                                                 </Link>
                                             </td>
                                             <td className="px-6 py-3">

@@ -1,18 +1,20 @@
 import { useEffect, useState } from 'react';
 import { useForm, useFieldArray, Controller } from 'react-hook-form';
-import { useNavigate, useParams, Link } from 'react-router-dom';
+import { useNavigate, useParams, Link, useLocation } from 'react-router-dom';
 import { useData } from '../context/DataContext';
 import { useToast } from '../context/ToastContext';
-import { ArrowLeft, Save, Plus, Trash2 } from 'lucide-react';
+import { ArrowLeft, Save, Plus, Trash2, Layers } from 'lucide-react';
 import { format } from 'date-fns';
 import CustomerModal from '../components/CustomerModal';
 import ItemModal from '../components/ItemModal';
 import SearchableSelect from '../components/SearchableSelect';
+import { getQuotationNumberFromInvoice } from '../utils/quotationUtils';
 
 const QuotationForm = () => {
     const { id } = useParams();
     const navigate = useNavigate();
-    const { addQuotation, updateQuotation, quotations, customers, items } = useData();
+    const location = useLocation();
+    const { addQuotation, updateQuotation, quotations, invoices, customers, items } = useData();
     const { addToast } = useToast();
     const isEditMode = !!id;
 
@@ -20,6 +22,7 @@ const QuotationForm = () => {
     const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
     const [isItemModalOpen, setIsItemModalOpen] = useState(false);
     const [activeItemIndex, setActiveItemIndex] = useState(null);
+    const [selectedInvoiceId, setSelectedInvoiceId] = useState('');
 
     const { register, control, handleSubmit, watch, setValue, reset, formState: { errors, isSubmitting } } = useForm({
         defaultValues: {
@@ -59,6 +62,42 @@ const QuotationForm = () => {
 
     const totals = { subtotal, taxTotal, total };
 
+    const handleSelectInvoice = (invId) => {
+        setSelectedInvoiceId(invId);
+        if (!invId) return;
+        const inv = invoices.find(i => i.id === invId);
+        if (!inv) return;
+
+        const targetQuoteNum = getQuotationNumberFromInvoice(inv.invoiceNumber);
+        setValue('quotationNumber', targetQuoteNum, { shouldValidate: true });
+        setValue('invoiceId', inv.id);
+        setValue('invoiceNumber', inv.invoiceNumber);
+        setValue('notes', `Converted from Invoice ${inv.invoiceNumber}`);
+
+        if (inv.customerId) {
+            setValue('customerId', inv.customerId, { shouldValidate: true });
+            setValue('customerName', inv.customerName || '');
+        }
+
+        if (inv.items && inv.items.length > 0) {
+            setValue('items', inv.items.map(it => ({
+                itemId: it.itemId || '',
+                name: it.name || '',
+                description: it.description || '',
+                quantity: it.quantity || 1,
+                price: it.price || 0,
+                taxRate: it.taxRate || 0,
+                total: it.total || ((parseFloat(it.quantity) || 1) * (parseFloat(it.price) || 0))
+            })));
+        }
+
+        if (inv.discount !== undefined) {
+            setValue('discount', inv.discount);
+        }
+
+        addToast(`Linked Invoice ${inv.invoiceNumber} → Serial: ${targetQuoteNum}`, 'info');
+    };
+
     useEffect(() => {
         if (isEditMode) {
             const quotation = quotations.find(q => q.id === id);
@@ -73,10 +112,16 @@ const QuotationForm = () => {
                 navigate('/quotations');
             }
         } else {
-            const nextNum = (quotations?.length || 0) + 1;
-            setValue('quotationNumber', `QT-${String(nextNum).padStart(3, '0')}`);
+            const params = new URLSearchParams(location.search);
+            const queryInvoiceId = params.get('invoiceId');
+            if (queryInvoiceId && invoices?.length > 0) {
+                handleSelectInvoice(queryInvoiceId);
+            } else {
+                const nextNum = Math.max(quotations?.length || 0, invoices?.length || 0) + 1;
+                setValue('quotationNumber', `QT-${String(nextNum).padStart(3, '0')}`);
+            }
         }
-    }, [id, quotations, isEditMode, navigate, reset, setValue]);
+    }, [id, quotations, invoices, isEditMode, navigate, reset, setValue, location.search]);
 
     const handleItemChange = (index, itemId) => {
         const item = items.find(i => i.id === itemId);
@@ -144,6 +189,35 @@ const QuotationForm = () => {
 
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
                 <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700 p-6 transition-colors">
+                    {!isEditMode && invoices && invoices.length > 0 && (
+                        <div className="mb-6 p-4 rounded-lg bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                            <div className="flex items-center gap-2">
+                                <Layers className="h-5 w-5 text-purple-600 dark:text-purple-400 shrink-0" />
+                                <div>
+                                    <div className="text-sm font-semibold text-purple-900 dark:text-purple-200">
+                                        Match with Invoice Serial Number
+                                    </div>
+                                    <div className="text-xs text-purple-700 dark:text-purple-300">
+                                        Select an invoice to auto-fill items and assign the exact matching quotation serial (e.g. INV-008 → QT-008)
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="w-full sm:w-64">
+                                <select
+                                    value={selectedInvoiceId}
+                                    onChange={(e) => handleSelectInvoice(e.target.value)}
+                                    className="w-full px-3 py-2 text-xs border border-purple-300 dark:border-purple-600 rounded-md bg-white dark:bg-gray-800 text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                                >
+                                    <option value="">-- Link to an Invoice --</option>
+                                    {invoices.map(inv => (
+                                        <option key={inv.id} value={inv.id}>
+                                            {inv.invoiceNumber} (→ {getQuotationNumberFromInvoice(inv.invoiceNumber)})
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                        </div>
+                    )}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
                         <div>
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Customer</label>

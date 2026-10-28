@@ -6,9 +6,10 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Plus, Search, Edit2, Trash2, FileText, Eye, Layers, FileSpreadsheet } from 'lucide-react';
 import { format } from 'date-fns';
 import InvoiceStats from '../components/InvoiceStats';
+import { getQuotationNumberFromInvoice } from '../utils/quotationUtils';
 
 const Invoices = () => {
-    const { invoices, customers, deleteInvoice, updateInvoice, addQuotation, loading } = useData();
+    const { invoices, quotations, customers, deleteInvoice, updateInvoice, addQuotation, loading } = useData();
     const { user } = useAuth();
     const { addToast } = useToast();
     const navigate = useNavigate();
@@ -168,35 +169,54 @@ const Invoices = () => {
                                                 >
                                                     <Edit2 className="h-4 w-4" />
                                                 </Link>
-                                                <button
-                                                    onClick={async () => {
-                                                        try {
-                                                            const created = await addQuotation({
-                                                                quotationNumber: `QT-${Date.now().toString().slice(-4)}`,
-                                                                date: new Date().toISOString(),
-                                                                validUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-                                                                customerId: inv.customerId || '',
-                                                                customerName: getCustomerName(inv.customerId),
-                                                                items: inv.items || [],
-                                                                subtotal: inv.subtotal || 0,
-                                                                discount: inv.discount || 0,
-                                                                taxTotal: inv.taxTotal || 0,
-                                                                total: inv.total || 0,
-                                                                status: 'Active',
-                                                                notes: `Converted from Invoice ${inv.invoiceNumber}`
-                                                            });
-                                                            addToast('Converted to 3 Quotations set!', 'success');
-                                                            navigate(`/quotations/${created.id}`);
-                                                        } catch (err) {
-                                                            console.error(err);
-                                                            addToast('Failed to create quotation', 'error');
-                                                        }
-                                                    }}
-                                                    className="p-1 text-purple-600 hover:bg-purple-50 rounded flex items-center gap-1"
-                                                    title="Generate 3 Quotations"
-                                                >
-                                                    <Layers className="h-4 w-4" />
-                                                </button>
+                                                {(() => {
+                                                    const targetQuoteNumber = getQuotationNumberFromInvoice(inv.invoiceNumber);
+                                                    const existingQuote = (quotations || []).find(q =>
+                                                        q.invoiceId === inv.id ||
+                                                        q.invoiceNumber === inv.invoiceNumber ||
+                                                        (q.notes && q.notes.includes(inv.invoiceNumber)) ||
+                                                        (q.quotationNumber && q.quotationNumber === targetQuoteNumber)
+                                                    );
+
+                                                    return (
+                                                        <button
+                                                            onClick={async () => {
+                                                                if (existingQuote) {
+                                                                    navigate(`/quotations/${existingQuote.id}`);
+                                                                    return;
+                                                                }
+
+                                                                try {
+                                                                    const created = await addQuotation({
+                                                                        quotationNumber: targetQuoteNumber,
+                                                                        invoiceId: inv.id,
+                                                                        invoiceNumber: inv.invoiceNumber,
+                                                                        date: new Date().toISOString(),
+                                                                        validUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+                                                                        customerId: inv.customerId || '',
+                                                                        customerName: getCustomerName(inv.customerId),
+                                                                        items: inv.items || [],
+                                                                        subtotal: inv.subtotal || 0,
+                                                                        discount: inv.discount || 0,
+                                                                        taxTotal: inv.taxTotal || 0,
+                                                                        total: inv.total || 0,
+                                                                        status: 'Active',
+                                                                        notes: `Converted from Invoice ${inv.invoiceNumber}`
+                                                                    });
+                                                                    addToast(`Quotation ${targetQuoteNumber} generated for Invoice ${inv.invoiceNumber}!`, 'success');
+                                                                    navigate(`/quotations/${created.id}`);
+                                                                } catch (err) {
+                                                                    console.error(err);
+                                                                    addToast('Failed to create quotation', 'error');
+                                                                }
+                                                            }}
+                                                            className={`p-1 rounded flex items-center gap-1 ${existingQuote ? 'text-purple-700 bg-purple-50 hover:bg-purple-100' : 'text-purple-600 hover:bg-purple-50'}`}
+                                                            title={existingQuote ? `View 3 Quotations (${targetQuoteNumber})` : `Generate 3 Quotations (${targetQuoteNumber})`}
+                                                        >
+                                                            <Layers className="h-4 w-4" />
+                                                        </button>
+                                                    );
+                                                })()}
                                                 <button
                                                     onClick={() => handleDelete(inv.id)}
                                                     className="p-1 text-red-600 hover:bg-red-50 rounded"

@@ -1,5 +1,6 @@
 import { Document, Page, Text, View, StyleSheet, Font } from '@react-pdf/renderer';
 import { format } from 'date-fns';
+import { formatQuoteNumber } from '../utils/quotationUtils';
 
 // Register custom font supporting Devanagari (Marathi)
 Font.register({
@@ -218,15 +219,6 @@ const styles = StyleSheet.create({
     }
 });
 
-const formatQuoteNumber = (num, fallbackId) => {
-    const src = num || fallbackId || '';
-    const match = String(src).match(/\d+/);
-    if (match) {
-        return `QT-${match[0].padStart(3, '0')}`;
-    }
-    return src ? `QT-${src}` : 'QT-001';
-};
-
 const QuotationPDF = ({ quotation, customer, storeInfo, markupPercent = 0 }) => {
     const markupFactor = 1 + (parseFloat(markupPercent) || 0) / 100;
 
@@ -247,7 +239,7 @@ const QuotationPDF = ({ quotation, customer, storeInfo, markupPercent = 0 }) => 
 
     const discount = parseFloat(quotation?.discount) || 0;
     const grandTotal = Math.max(0, subtotal - discount);
-    const formattedQuoteNo = formatQuoteNumber(quotation?.quotationNumber, quotation?.id);
+    const formattedQuoteNo = formatQuoteNumber(quotation?.quotationNumber, quotation?.id, quotation);
 
     return (
         <Document>

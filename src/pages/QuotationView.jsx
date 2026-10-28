@@ -21,14 +21,7 @@ const numberToWords = (num) => {
     return str === '' ? 'Zero Only' : str.trim();
 };
 
-const formatQuoteNumber = (num, fallbackId) => {
-    const src = num || fallbackId || '';
-    const match = String(src).match(/\d+/);
-    if (match) {
-        return `QT-${match[0].padStart(3, '0')}`;
-    }
-    return src ? `QT-${src}` : 'QT-001';
-};
+import { formatQuoteNumber } from '../utils/quotationUtils';
 
 const QuotationView = () => {
     const { id } = useParams();
@@ -175,7 +168,7 @@ const QuotationView = () => {
 
         try {
             const currentStoreObj = stores[activeTab];
-            const formattedQuoteNo = formatQuoteNumber(quotation?.quotationNumber, quotation?.id);
+            const formattedQuoteNo = formatQuoteNumber(quotation?.quotationNumber, quotation?.id, quotation);
             const filename = `Quotation_${currentStoreObj.name.replace(/\s+/g, '_')}_${formattedQuoteNo}.pdf`;
             await capturePDFForElement(quotationRef.current, filename);
             addToast('PDF downloaded successfully', 'success');
@@ -190,7 +183,7 @@ const QuotationView = () => {
             addToast('Generating all 3 store quotation PDFs...', 'info');
 
             const keys = ['store1', 'store2', 'store3'];
-            const formattedQuoteNo = formatQuoteNumber(quotation?.quotationNumber, quotation?.id);
+            const formattedQuoteNo = formatQuoteNumber(quotation?.quotationNumber, quotation?.id, quotation);
             for (const key of keys) {
                 setActiveTab(key);
                 await new Promise(r => setTimeout(r, 450));
@@ -211,7 +204,7 @@ const QuotationView = () => {
         return <div className="p-8">Loading quotation...</div>;
     }
 
-    const formattedQuoteNo = formatQuoteNumber(quotation.quotationNumber, quotation.id);
+    const formattedQuoteNo = formatQuoteNumber(quotation.quotationNumber, quotation.id, quotation);
     const currentStore = stores[activeTab === 'compare' ? 'store1' : activeTab];
     const currentMarkupFactor = 1 + (currentStore?.markup || 0) / 100;
 
