@@ -5,20 +5,22 @@ import {
     Download,
     Printer,
     FileText,
-    Check,
     Store,
     Settings2,
     Users,
     Filter,
-    ArrowUpDown,
     CheckSquare,
     ZoomIn,
     ZoomOut,
     Eye,
-    Sparkles
+    Maximize2
 } from 'lucide-react';
 import { useToast } from '../context/ToastContext';
-import { paginateCatalogItems, generatePriceListPDF } from '../utils/priceListPdfGenerator';
+import {
+    paginateCatalogItems,
+    generatePriceListPDF,
+    printCatalogViaIframe
+} from '../utils/priceListPdfGenerator';
 
 const DEFAULT_STORES = {
     store1: {
@@ -52,13 +54,14 @@ const DEFAULT_STORES = {
 
 const PriceListModal = ({ isOpen, onClose, items = [], customers = [] }) => {
     const { addToast } = useToast();
-    const printableContainerRef = useRef(null);
+    const exportContainerRef = useRef(null);
 
     // Customization States
     const [selectedStoreKey, setSelectedStoreKey] = useState('store1');
     const [documentTitle, setDocumentTitle] = useState('PRODUCT CATALOG & PRICE LIST');
     const [statusFilter, setStatusFilter] = useState('active'); // 'active', 'all', 'inStock'
     const [sortBy, setSortBy] = useState('name-asc'); // 'name-asc', 'price-asc', 'price-desc', 'sku'
+    const [density, setDensity] = useState('standard'); // 'standard', 'compact', 'comfortable'
 
     // Column Toggles
     const [includeSku, setIncludeSku] = useState(true);
@@ -83,11 +86,11 @@ const PriceListModal = ({ isOpen, onClose, items = [], customers = [] }) => {
     );
     const [includeSignatures, setIncludeSignatures] = useState(true);
 
-    // Zoom & UI state
-    const [zoomLevel, setZoomLevel] = useState(0.85);
+    // Preview zoom & state
+    const [zoomLevel, setZoomLevel] = useState(0.8);
     const [isGenerating, setIsGenerating] = useState(false);
     const [generationProgress, setGenerationProgress] = useState({ current: 0, total: 0 });
-    const [activeTab, setActiveTab] = useState('customization'); // 'customization' or 'preview'
+    const [activeTab, setActiveTab] = useState('customization'); // mobile toggle
 
     const selectedStore = DEFAULT_STORES[selectedStoreKey] || DEFAULT_STORES.store1;
 
@@ -112,14 +115,12 @@ const PriceListModal = ({ isOpen, onClose, items = [], customers = [] }) => {
     const processedItems = useMemo(() => {
         let list = [...(items || [])];
 
-        // Filter
         if (statusFilter === 'active') {
             list = list.filter(i => (i.status || 'active').toLowerCase() === 'active');
         } else if (statusFilter === 'inStock') {
             list = list.filter(i => (parseFloat(i.stock) || 0) > 0);
         }
 
-        // Sort
         list.sort((a, b) => {
             if (sortBy === 'name-asc') {
                 return (a.name || '').localeCompare(b.name || '');
@@ -136,18 +137,19 @@ const PriceListModal = ({ isOpen, onClose, items = [], customers = [] }) => {
         return list;
     }, [items, statusFilter, sortBy]);
 
-    // Paginated pages for A4 layout
+    // Paginated pages calibrated for A4
     const pages = useMemo(() => {
         return paginateCatalogItems(processedItems, {
             includeCustomerBox,
             includeInstructions: true,
-            includeSignatures
+            includeSignatures,
+            density
         });
-    }, [processedItems, includeCustomerBox, includeSignatures]);
+    }, [processedItems, includeCustomerBox, includeSignatures, density]);
 
-    // PDF Download Handler
+    // PDF Download Handler (uses unscaled off-screen export container)
     const handleDownloadPDF = async () => {
-        if (!printableContainerRef.current) return;
+        if (!exportContainerRef.current) return;
         setIsGenerating(true);
         setGenerationProgress({ current: 0, total: pages.length });
 
@@ -157,7 +159,7 @@ const PriceListModal = ({ isOpen, onClose, items = [], customers = [] }) => {
             const filename = `Price_List_Order_Sheet_${sanitizedStore}_${dateStr}.pdf`;
 
             await generatePriceListPDF(
-                printableContainerRef.current,
+                exportContainerRef.current,
                 filename,
                 (current, total) => setGenerationProgress({ current, total })
             );
@@ -172,37 +174,575 @@ const PriceListModal = ({ isOpen, onClose, items = [], customers = [] }) => {
         }
     };
 
-    // Direct Browser Print
+    // Direct Print Handler (prints isolated iframe content)
     const handlePrint = () => {
-        window.print();
+        if (!exportContainerRef.current) return;
+        printCatalogViaIframe(exportContainerRef.current, `${documentTitle} - ${selectedStore.name}`);
+    };
+
+    // Reusable Page Component (used in both live preview and unscaled export container)
+    const renderPageContent = (page, pageIdx, isPreview = false) => {
+        const startingIndex = pages
+            .slice(0, pageIdx)
+            .reduce((acc, p) => acc + p.items.length, 0);
+
+        // Density styling variables
+        const rowPaddingY = density === 'compact' ? '3px' : density === 'comfortable' ? '6px' : '4px';
+        const fontSizeBody = density === 'compact' ? '9.5px' : '10.5px';
+        const boxHeight = density === 'compact' ? '20px' : '24px';
+
+        return (
+            <div
+                key={pageIdx}
+                className="catalog-pdf-page bg-white text-gray-900"
+                style={{
+                    width: '794px',
+                    minHeight: pages.length === 1 ? 'auto' : '1123px',
+                    boxSizing: 'border-box',
+                    padding: '24px 30px',
+                    backgroundColor: '#ffffff',
+                    color: '#0f172a',
+                    fontFamily: "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
+                    margin: isPreview ? '0 auto 24px auto' : '0',
+                    boxShadow: isPreview ? '0 10px 25px -5px rgba(0,0,0,0.1)' : 'none',
+                    border: isPreview ? '1px solid #e2e8f0' : 'none'
+                }}
+            >
+                {/* 1. Page Header */}
+                {page.isFirstPage ? (
+                    <div style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'flex-start',
+                        borderBottom: '2.5px solid #1e40af',
+                        paddingBottom: '10px',
+                        marginBottom: '10px'
+                    }}>
+                        <div style={{ flex: 1, paddingRight: '16px' }}>
+                            <h1 style={{
+                                fontSize: '20px',
+                                fontWeight: '800',
+                                color: '#1e40af',
+                                margin: '0 0 2px 0',
+                                letterSpacing: '-0.2px'
+                            }}>
+                                {selectedStore.name}
+                            </h1>
+                            <div style={{
+                                fontSize: '9.5px',
+                                color: '#047857',
+                                fontWeight: '600',
+                                marginBottom: '2px'
+                            }}>
+                                {selectedStore.tagline}
+                            </div>
+                            <div style={{
+                                fontSize: '9.5px',
+                                color: '#475569',
+                                lineHeight: '1.35',
+                                maxWidth: '440px'
+                            }}>
+                                {selectedStore.address}
+                            </div>
+                            <div style={{
+                                fontSize: '9.5px',
+                                fontWeight: '600',
+                                color: '#1e293b',
+                                marginTop: '4px',
+                                display: 'flex',
+                                flexWrap: 'wrap',
+                                gap: '12px'
+                            }}>
+                                <span>📞 Mob: {selectedStore.phone}</span>
+                                {selectedStore.gstin && <span>GSTIN: {selectedStore.gstin}</span>}
+                                {selectedStore.uniqueCode && <span>Code: {selectedStore.uniqueCode}</span>}
+                            </div>
+                        </div>
+
+                        <div style={{
+                            textAlign: 'right',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'flex-end',
+                            minWidth: '220px'
+                        }}>
+                            <div style={{
+                                backgroundColor: '#1e40af',
+                                color: '#ffffff',
+                                padding: '5px 12px',
+                                borderRadius: '4px',
+                                fontSize: '11px',
+                                fontWeight: '700',
+                                letterSpacing: '0.4px',
+                                textTransform: 'uppercase',
+                                marginBottom: '4px'
+                            }}>
+                                {documentTitle}
+                            </div>
+                            <div style={{ fontSize: '9.5px', color: '#475569' }}>
+                                Date: <strong>{format(new Date(), 'dd-MM-yyyy')}</strong>
+                            </div>
+                            <div style={{ fontSize: '9px', color: '#64748b', marginTop: '1px' }}>
+                                Ref: Rate Card • {format(new Date(), 'MMMM yyyy')}
+                            </div>
+                        </div>
+                    </div>
+                ) : (
+                    /* Running header on page 2+ */
+                    <div style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        borderBottom: '1.5px solid #cbd5e1',
+                        paddingBottom: '5px',
+                        marginBottom: '8px',
+                        fontSize: '9.5px',
+                        color: '#475569'
+                    }}>
+                        <div style={{ fontWeight: 'bold', color: '#1e40af' }}>
+                            {selectedStore.name} • {documentTitle}
+                        </div>
+                        <div>
+                            Date: {format(new Date(), 'dd-MM-yyyy')} | Page {page.pageNumber} of {page.totalPages}
+                        </div>
+                    </div>
+                )}
+
+                {/* 2. Customer Order Details Form Box (Page 1) */}
+                {page.isFirstPage && page.showCustomerBox && (
+                    <div style={{
+                        border: '1px solid #cbd5e1',
+                        borderRadius: '5px',
+                        padding: '6px 10px',
+                        marginBottom: '8px',
+                        backgroundColor: '#f8fafc'
+                    }}>
+                        <div style={{
+                            fontSize: '9px',
+                            fontWeight: 'bold',
+                            color: '#1e40af',
+                            textTransform: 'uppercase',
+                            marginBottom: '4px',
+                            letterSpacing: '0.5px',
+                            display: 'flex',
+                            justifyContent: 'space-between'
+                        }}>
+                            <span>Customer Order Details (Please fill in or verify)</span>
+                            <span style={{ fontSize: '8.5px', color: '#64748b', fontWeight: 'normal' }}>
+                                Order / PO Ref No: ____________________
+                            </span>
+                        </div>
+                        <div style={{
+                            display: 'grid',
+                            gridTemplateColumns: '1.4fr 1fr',
+                            gap: '4px 14px',
+                            fontSize: '10px',
+                            color: '#1e293b'
+                        }}>
+                            <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px' }}>
+                                <span style={{ fontWeight: 600, color: '#475569', minWidth: '92px' }}>Customer Name:</span>
+                                <span style={{
+                                    borderBottom: '1px dotted #94a3b8',
+                                    flex: 1,
+                                    height: '15px',
+                                    display: 'inline-block',
+                                    fontWeight: customerName ? '600' : 'normal'
+                                }}>
+                                    {customerName || ''}
+                                </span>
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px' }}>
+                                <span style={{ fontWeight: 600, color: '#475569', minWidth: '70px' }}>Contact No:</span>
+                                <span style={{
+                                    borderBottom: '1px dotted #94a3b8',
+                                    flex: 1,
+                                    height: '15px',
+                                    display: 'inline-block'
+                                }}>
+                                    {customerPhone || ''}
+                                </span>
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px' }}>
+                                <span style={{ fontWeight: 600, color: '#475569', minWidth: '92px' }}>Delivery Address:</span>
+                                <span style={{
+                                    borderBottom: '1px dotted #94a3b8',
+                                    flex: 1,
+                                    height: '15px',
+                                    display: 'inline-block'
+                                }}>
+                                    {customerAddress || ''}
+                                </span>
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px' }}>
+                                <span style={{ fontWeight: 600, color: '#475569', minWidth: '70px' }}>Target Date:</span>
+                                <span style={{
+                                    borderBottom: '1px dotted #94a3b8',
+                                    flex: 1,
+                                    height: '15px',
+                                    display: 'inline-block'
+                                }} />
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* 3. Instructions Callout (Page 1) */}
+                {page.isFirstPage && page.showInstructions && (
+                    <div style={{
+                        backgroundColor: '#eff6ff',
+                        borderLeft: '3.5px solid #2563eb',
+                        borderRadius: '3px',
+                        padding: '4px 8px',
+                        marginBottom: '8px',
+                        fontSize: '9px',
+                        color: '#1e3a8a',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px'
+                    }}>
+                        <span style={{ fontWeight: 'bold' }}>✍️ How to Order:</span>
+                        <span>{instructionsText}</span>
+                    </div>
+                )}
+
+                {/* 4. Perfectly Aligned Table with <colgroup> & tableLayout: fixed */}
+                <table style={{
+                    width: '100%',
+                    tableLayout: 'fixed',
+                    borderCollapse: 'collapse',
+                    textAlign: 'left',
+                    border: '1.5px solid #334155',
+                    fontSize: fontSizeBody
+                }}>
+                    <colgroup>
+                        <col style={{ width: '38px' }} /> {/* Sr. */}
+                        <col style={{ width: 'auto' }} /> {/* Description */}
+                        {includeSku && <col style={{ width: '85px' }} />} {/* SKU */}
+                        {includeTaxRate && <col style={{ width: '60px' }} />} {/* Tax */}
+                        {includePrice && <col style={{ width: '90px' }} />} {/* Price */}
+                        {includeEmptyQty && <col style={{ width: '100px' }} />} {/* Order Qty */}
+                        {includeRemarks && <col style={{ width: '95px' }} />} {/* Remarks */}
+                    </colgroup>
+                    <thead>
+                        <tr style={{
+                            backgroundColor: '#1e3a8a',
+                            color: '#ffffff',
+                            fontSize: '9px',
+                            fontWeight: '700',
+                            letterSpacing: '0.3px',
+                            textTransform: 'uppercase'
+                        }}>
+                            <th style={{
+                                border: '1px solid #475569',
+                                padding: '6px 4px',
+                                textAlign: 'center'
+                            }}>
+                                Sr.
+                            </th>
+                            <th style={{
+                                border: '1px solid #475569',
+                                padding: '6px 8px',
+                                textAlign: 'left'
+                            }}>
+                                Item Description / Product Name
+                            </th>
+                            {includeSku && (
+                                <th style={{
+                                    border: '1px solid #475569',
+                                    padding: '6px 6px',
+                                    textAlign: 'center'
+                                }}>
+                                    SKU / Code
+                                </th>
+                            )}
+                            {includeTaxRate && (
+                                <th style={{
+                                    border: '1px solid #475569',
+                                    padding: '6px 4px',
+                                    textAlign: 'center'
+                                }}>
+                                    Tax %
+                                </th>
+                            )}
+                            {includePrice && (
+                                <th style={{
+                                    border: '1px solid #475569',
+                                    padding: '6px 8px',
+                                    textAlign: 'right'
+                                }}>
+                                    Price (₹)
+                                </th>
+                            )}
+                            {includeEmptyQty && (
+                                <th style={{
+                                    border: '1px solid #0284c7',
+                                    backgroundColor: '#0284c7',
+                                    color: '#ffffff',
+                                    padding: '6px 4px',
+                                    textAlign: 'center'
+                                }}>
+                                    Order Qty <span style={{ fontSize: '8px', opacity: 0.9 }}>[Fill]</span>
+                                </th>
+                            )}
+                            {includeRemarks && (
+                                <th style={{
+                                    border: '1px solid #475569',
+                                    padding: '6px 6px',
+                                    textAlign: 'left'
+                                }}>
+                                    Remarks / Notes
+                                </th>
+                            )}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {page.items.map((item, idx) => {
+                            const itemSr = startingIndex + idx + 1;
+                            const isEven = idx % 2 === 0;
+
+                            return (
+                                <tr
+                                    key={item.id || idx}
+                                    style={{
+                                        backgroundColor: isEven ? '#ffffff' : '#f8fafc',
+                                        height: density === 'compact' ? '24px' : '28px'
+                                    }}
+                                >
+                                    <td style={{
+                                        border: '1px solid #cbd5e1',
+                                        padding: `${rowPaddingY} 4px`,
+                                        textAlign: 'center',
+                                        color: '#64748b',
+                                        fontFamily: 'monospace',
+                                        fontSize: '9px'
+                                    }}>
+                                        {itemSr}
+                                    </td>
+                                    <td style={{
+                                        border: '1px solid #cbd5e1',
+                                        padding: `${rowPaddingY} 8px`,
+                                        color: '#0f172a',
+                                        overflow: 'hidden',
+                                        textOverflow: 'ellipsis',
+                                        whiteSpace: 'nowrap'
+                                    }}>
+                                        <span style={{ fontWeight: '600' }}>{item.name}</span>
+                                        {item.description && (
+                                            <span style={{ fontSize: '8.5px', color: '#64748b', marginLeft: '6px' }}>
+                                                ({item.description})
+                                            </span>
+                                        )}
+                                    </td>
+                                    {includeSku && (
+                                        <td style={{
+                                            border: '1px solid #cbd5e1',
+                                            padding: `${rowPaddingY} 6px`,
+                                            textAlign: 'center',
+                                            color: '#475569',
+                                            fontSize: '8.5px',
+                                            fontFamily: 'monospace'
+                                        }}>
+                                            {item.sku || '-'}
+                                        </td>
+                                    )}
+                                    {includeTaxRate && (
+                                        <td style={{
+                                            border: '1px solid #cbd5e1',
+                                            padding: `${rowPaddingY} 4px`,
+                                            textAlign: 'center',
+                                            color: '#475569',
+                                            fontSize: '9px'
+                                        }}>
+                                            {item.taxRate ? `${item.taxRate}%` : '0%'}
+                                        </td>
+                                    )}
+                                    {includePrice && (
+                                        <td style={{
+                                            border: '1px solid #cbd5e1',
+                                            padding: `${rowPaddingY} 8px`,
+                                            textAlign: 'right',
+                                            color: '#0f172a',
+                                            fontWeight: '700'
+                                        }}>
+                                            ₹{parseFloat(item.price || 0).toFixed(2)}
+                                        </td>
+                                    )}
+                                    {includeEmptyQty && (
+                                        <td style={{
+                                            border: '1px solid #cbd5e1',
+                                            backgroundColor: '#f0f9ff',
+                                            padding: '2px 6px',
+                                            textAlign: 'center'
+                                        }}>
+                                            {/* Clean, perfectly-centered write-in box */}
+                                            <div style={{
+                                                height: boxHeight,
+                                                border: '1.5px dashed #0284c7',
+                                                borderRadius: '3px',
+                                                backgroundColor: '#ffffff',
+                                                width: '90%',
+                                                margin: '0 auto'
+                                            }} />
+                                        </td>
+                                    )}
+                                    {includeRemarks && (
+                                        <td style={{
+                                            border: '1px solid #cbd5e1',
+                                            padding: `${rowPaddingY} 6px`
+                                        }}>
+                                            <div style={{
+                                                borderBottom: '1px dotted #94a3b8',
+                                                height: '14px',
+                                                width: '95%'
+                                            }} />
+                                        </td>
+                                    )}
+                                </tr>
+                            );
+                        })}
+                    </tbody>
+                </table>
+
+                {/* 5. Terms, Conditions & Signatures (shown on last page) */}
+                {page.isLastPage && page.showSignatures && (
+                    <div style={{
+                        borderTop: '1px solid #cbd5e1',
+                        paddingTop: '8px',
+                        marginTop: '12px'
+                    }}>
+                        <div style={{
+                            display: 'grid',
+                            gridTemplateColumns: '1.3fr 1fr',
+                            gap: '12px',
+                            marginBottom: '10px',
+                            fontSize: '8.5px',
+                            color: '#475569'
+                        }}>
+                            <div>
+                                <div style={{
+                                    fontWeight: 'bold',
+                                    color: '#1e40af',
+                                    marginBottom: '2px',
+                                    textTransform: 'uppercase',
+                                    fontSize: '8px'
+                                }}>
+                                    Terms & Conditions:
+                                </div>
+                                <div style={{ lineHeight: '1.35' }}>
+                                    {termsText}
+                                </div>
+                            </div>
+                            <div>
+                                <div style={{
+                                    fontWeight: 'bold',
+                                    color: '#1e40af',
+                                    marginBottom: '2px',
+                                    textTransform: 'uppercase',
+                                    fontSize: '8px'
+                                }}>
+                                    Order via WhatsApp:
+                                </div>
+                                <div style={{ lineHeight: '1.35' }}>
+                                    Send a clear photo of this filled sheet to <strong>{selectedStore.phone}</strong>. We will confirm and prepare your invoice immediately.
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Signatures */}
+                        <div style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'flex-end',
+                            padding: '4px 10px 0 10px'
+                        }}>
+                            <div style={{ textAlign: 'center', width: '200px' }}>
+                                <div style={{ height: '30px' }} />
+                                <div style={{
+                                    borderTop: '1px solid #0f172a',
+                                    paddingTop: '2px',
+                                    fontWeight: 'bold',
+                                    fontSize: '9px',
+                                    color: '#0f172a'
+                                }}>
+                                    Customer / Purchaser Signature
+                                </div>
+                                <div style={{ fontSize: '8px', color: '#64748b' }}>
+                                    With Official Stamp & Date
+                                </div>
+                            </div>
+                            <div style={{ textAlign: 'center', width: '220px' }}>
+                                <div style={{
+                                    fontSize: '9px',
+                                    fontWeight: 'bold',
+                                    color: '#1e40af',
+                                    marginBottom: '26px'
+                                }}>
+                                    For {selectedStore.name}
+                                </div>
+                                <div style={{
+                                    borderTop: '1px solid #0f172a',
+                                    paddingTop: '2px',
+                                    fontWeight: 'bold',
+                                    fontSize: '9px',
+                                    color: '#0f172a'
+                                }}>
+                                    Authorized Signatory
+                                </div>
+                                <div style={{ fontSize: '8px', color: '#64748b' }}>
+                                    Sales / Proprietor
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* 6. Page Footer */}
+                <div style={{
+                    borderTop: '1px solid #e2e8f0',
+                    paddingTop: '4px',
+                    marginTop: '8px',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    fontSize: '8px',
+                    color: '#94a3b8'
+                }}>
+                    <div>
+                        <strong>{selectedStore.name}</strong> • Phone: {selectedStore.phone} • Chh. Sambhaji Nagar
+                    </div>
+                    <div>
+                        Page {page.pageNumber} of {page.totalPages}
+                    </div>
+                </div>
+            </div>
+        );
     };
 
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/60 backdrop-blur-sm overflow-hidden print:static print:inset-auto print:p-0 print:bg-white print:z-auto print:block">
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-7xl h-[94vh] flex flex-col overflow-hidden border border-gray-200 dark:border-gray-700 animate-in fade-in duration-200 print:h-auto print:max-w-none print:shadow-none print:border-none print:rounded-none">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/60 backdrop-blur-sm overflow-hidden">
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-7xl h-[94vh] flex flex-col overflow-hidden border border-gray-200 dark:border-gray-700 animate-in fade-in duration-200">
                 {/* Modal Header */}
-                <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between bg-gray-50 dark:bg-gray-900/50 flex-shrink-0 print:hidden">
+                <div className="px-6 py-3.5 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between bg-gray-50 dark:bg-gray-900/50 flex-shrink-0">
                     <div className="flex items-center gap-3">
                         <div className="p-2 bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 rounded-lg">
                             <FileText className="h-5 w-5" />
                         </div>
                         <div>
-                            <h2 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                                Download Price List & Customer Order Sheet
-                                <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-900/60 dark:text-emerald-300">
+                            <h2 className="text-base sm:text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                                Price List & Order Sheet Generator
+                                <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-900/60 dark:text-emerald-300">
                                     {processedItems.length} Items • {pages.length} {pages.length === 1 ? 'Page' : 'Pages'}
                                 </span>
                             </h2>
                             <p className="text-xs text-gray-500 dark:text-gray-400">
-                                Generates a professional catalog with an empty "Order Qty" column for customers to fill out their orders.
+                                Exact print preview & aligned A4 PDF with customer fill-in quantity boxes.
                             </p>
                         </div>
                     </div>
 
                     <div className="flex items-center gap-3">
-                        {/* Tab toggle for small screens */}
                         <div className="flex sm:hidden bg-gray-200 dark:bg-gray-700 rounded-lg p-0.5 text-xs">
                             <button
                                 onClick={() => setActiveTab('customization')}
@@ -227,33 +767,72 @@ const PriceListModal = ({ isOpen, onClose, items = [], customers = [] }) => {
                     </div>
                 </div>
 
-                {/* Modal Body: Two column layout */}
+                {/* Modal Body: Left controls + Right live preview */}
                 <div className="flex-1 flex overflow-hidden">
-                    {/* Left: Customization Controls */}
-                    <div className={`w-full sm:w-96 flex-shrink-0 border-r border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 overflow-y-auto p-5 space-y-5 text-sm print:hidden ${activeTab === 'preview' ? 'hidden sm:block' : 'block'}`}>
+                    {/* Left: Customization Settings */}
+                    <div className={`w-full sm:w-80 md:w-96 flex-shrink-0 border-r border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 overflow-y-auto p-4 space-y-4 text-xs ${activeTab === 'preview' ? 'hidden sm:block' : 'block'}`}>
                         {/* Store Selection */}
-                        <div className="space-y-2">
-                            <label className="flex items-center gap-2 font-semibold text-gray-800 dark:text-gray-200">
+                        <div className="space-y-1.5">
+                            <label className="flex items-center gap-2 font-bold text-gray-800 dark:text-gray-200">
                                 <Store className="h-4 w-4 text-blue-600" />
                                 Store Profile
                             </label>
                             <select
                                 value={selectedStoreKey}
                                 onChange={(e) => setSelectedStoreKey(e.target.value)}
-                                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-emerald-500 text-xs"
+                                className="w-full px-2.5 py-1.5 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-emerald-500"
                             >
                                 <option value="store1">Shri Brahmchaitanya Enterprises</option>
                                 <option value="store2">चैतन्य साहित्य भांडार</option>
                                 <option value="store3">गुरुकृपा एंटरप्राइजेस</option>
                             </select>
-                            <p className="text-[11px] text-gray-500 dark:text-gray-400">
-                                Phone: {selectedStore.phone} • {selectedStore.gstin ? `GSTIN: ${selectedStore.gstin}` : 'No GST'}
+                        </div>
+
+                        {/* Page Layout Density */}
+                        <div className="space-y-1.5 bg-blue-50/50 dark:bg-blue-950/20 p-2.5 rounded-lg border border-blue-100 dark:border-blue-900/50">
+                            <label className="flex items-center justify-between font-bold text-gray-800 dark:text-gray-200">
+                                <span className="flex items-center gap-1.5">
+                                    <Maximize2 className="h-3.5 w-3.5 text-blue-600" />
+                                    Page Layout Density
+                                </span>
+                                <span className="text-[10px] text-blue-600 dark:text-blue-400 font-semibold uppercase">
+                                    {density}
+                                </span>
+                            </label>
+                            <div className="grid grid-cols-3 gap-1.5 mt-1">
+                                <button
+                                    type="button"
+                                    onClick={() => setDensity('compact')}
+                                    className={`py-1.5 px-2 rounded text-center font-medium transition-colors border ${density === 'compact' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600'}`}
+                                >
+                                    Compact
+                                    <span className="block text-[9px] opacity-80">~30 items/pg</span>
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setDensity('standard')}
+                                    className={`py-1.5 px-2 rounded text-center font-medium transition-colors border ${density === 'standard' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600'}`}
+                                >
+                                    Standard
+                                    <span className="block text-[9px] opacity-80">~24 items/pg</span>
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setDensity('comfortable')}
+                                    className={`py-1.5 px-2 rounded text-center font-medium transition-colors border ${density === 'comfortable' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600'}`}
+                                >
+                                    Spacious
+                                    <span className="block text-[9px] opacity-80">~18 items/pg</span>
+                                </button>
+                            </div>
+                            <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-1">
+                                Tip: Use <strong>Compact</strong> to fit more items and avoid unnecessary blank space.
                             </p>
                         </div>
 
-                        {/* Title and Subtitle */}
-                        <div className="space-y-2">
-                            <label className="flex items-center gap-2 font-semibold text-gray-800 dark:text-gray-200">
+                        {/* Document Title */}
+                        <div className="space-y-1.5">
+                            <label className="flex items-center gap-2 font-bold text-gray-800 dark:text-gray-200">
                                 <Settings2 className="h-4 w-4 text-blue-600" />
                                 Document Heading
                             </label>
@@ -261,107 +840,104 @@ const PriceListModal = ({ isOpen, onClose, items = [], customers = [] }) => {
                                 type="text"
                                 value={documentTitle}
                                 onChange={(e) => setDocumentTitle(e.target.value)}
-                                placeholder="PRODUCT CATALOG & PRICE LIST"
-                                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-xs"
+                                className="w-full px-2.5 py-1.5 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                             />
                         </div>
 
                         {/* Filter & Sorting */}
-                        <div className="space-y-2">
-                            <label className="flex items-center gap-2 font-semibold text-gray-800 dark:text-gray-200">
+                        <div className="space-y-1.5">
+                            <label className="flex items-center gap-2 font-bold text-gray-800 dark:text-gray-200">
                                 <Filter className="h-4 w-4 text-blue-600" />
                                 Items Filter & Sorting
                             </label>
                             <div className="grid grid-cols-2 gap-2">
                                 <div>
-                                    <span className="text-[11px] text-gray-500 dark:text-gray-400 block mb-1">Status</span>
+                                    <span className="text-[10px] text-gray-500 block mb-1">Status</span>
                                     <select
                                         value={statusFilter}
                                         onChange={(e) => setStatusFilter(e.target.value)}
-                                        className="w-full px-2 py-1.5 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-xs"
+                                        className="w-full px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                                     >
-                                        <option value="active">Active Only</option>
+                                        <option value="active">Active Items Only</option>
                                         <option value="inStock">In Stock Only</option>
                                         <option value="all">All Items</option>
                                     </select>
                                 </div>
                                 <div>
-                                    <span className="text-[11px] text-gray-500 dark:text-gray-400 block mb-1">Sort Order</span>
+                                    <span className="text-[10px] text-gray-500 block mb-1">Sort</span>
                                     <select
                                         value={sortBy}
                                         onChange={(e) => setSortBy(e.target.value)}
-                                        className="w-full px-2 py-1.5 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-xs"
+                                        className="w-full px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                                     >
                                         <option value="name-asc">Name (A → Z)</option>
                                         <option value="price-asc">Price (Low → High)</option>
                                         <option value="price-desc">Price (High → Low)</option>
-                                        <option value="sku">SKU / Code</option>
+                                        <option value="sku">SKU Code</option>
                                     </select>
                                 </div>
                             </div>
                         </div>
 
-                        {/* Columns Toggles */}
-                        <div className="space-y-2">
-                            <label className="flex items-center gap-2 font-semibold text-gray-800 dark:text-gray-200">
+                        {/* Column Checkboxes */}
+                        <div className="space-y-1.5">
+                            <label className="flex items-center gap-2 font-bold text-gray-800 dark:text-gray-200">
                                 <CheckSquare className="h-4 w-4 text-blue-600" />
-                                Table Columns
+                                Columns to Include
                             </label>
-                            <div className="space-y-2 bg-gray-50 dark:bg-gray-700/50 p-3 rounded-lg border border-gray-200 dark:border-gray-600 text-xs">
-                                <label className="flex items-center gap-2 cursor-pointer">
+                            <div className="space-y-1.5 bg-gray-50 dark:bg-gray-700/50 p-2.5 rounded-lg border border-gray-200 dark:border-gray-600">
+                                <label className="flex items-center gap-2 cursor-pointer font-medium text-emerald-700 dark:text-emerald-400">
                                     <input
                                         type="checkbox"
                                         checked={includeEmptyQty}
                                         onChange={(e) => setIncludeEmptyQty(e.target.checked)}
                                         className="rounded text-emerald-600 focus:ring-emerald-500"
                                     />
-                                    <span className="font-medium text-emerald-700 dark:text-emerald-400">
-                                        Empty "Order Qty" Column (for customer fill-in)
-                                    </span>
+                                    <span>Empty "Order Qty" Box (For customer fill-in)</span>
                                 </label>
                                 <label className="flex items-center gap-2 cursor-pointer">
                                     <input
                                         type="checkbox"
                                         checked={includePrice}
                                         onChange={(e) => setIncludePrice(e.target.checked)}
-                                        className="rounded text-blue-600 focus:ring-blue-500"
+                                        className="rounded text-blue-600"
                                     />
-                                    <span>Unit Price Column (₹)</span>
+                                    <span>Price Column (₹)</span>
                                 </label>
                                 <label className="flex items-center gap-2 cursor-pointer">
                                     <input
                                         type="checkbox"
                                         checked={includeSku}
                                         onChange={(e) => setIncludeSku(e.target.checked)}
-                                        className="rounded text-blue-600 focus:ring-blue-500"
+                                        className="rounded text-blue-600"
                                     />
-                                    <span>SKU / Product Code Column</span>
+                                    <span>SKU / Product Code</span>
                                 </label>
                                 <label className="flex items-center gap-2 cursor-pointer">
                                     <input
                                         type="checkbox"
                                         checked={includeRemarks}
                                         onChange={(e) => setIncludeRemarks(e.target.checked)}
-                                        className="rounded text-blue-600 focus:ring-blue-500"
+                                        className="rounded text-blue-600"
                                     />
-                                    <span>Remarks / Notes Line Column</span>
+                                    <span>Customer Remarks / Notes Line</span>
                                 </label>
                                 <label className="flex items-center gap-2 cursor-pointer">
                                     <input
                                         type="checkbox"
                                         checked={includeTaxRate}
                                         onChange={(e) => setIncludeTaxRate(e.target.checked)}
-                                        className="rounded text-blue-600 focus:ring-blue-500"
+                                        className="rounded text-blue-600"
                                     />
-                                    <span>Tax Rate % Column</span>
+                                    <span>Tax Rate (%)</span>
                                 </label>
                             </div>
                         </div>
 
-                        {/* Customer Order Details Box */}
-                        <div className="space-y-2">
+                        {/* Customer Header Form */}
+                        <div className="space-y-1.5">
                             <div className="flex items-center justify-between">
-                                <label className="flex items-center gap-2 font-semibold text-gray-800 dark:text-gray-200">
+                                <label className="flex items-center gap-2 font-bold text-gray-800 dark:text-gray-200">
                                     <Users className="h-4 w-4 text-blue-600" />
                                     Customer Info Header
                                 </label>
@@ -374,61 +950,39 @@ const PriceListModal = ({ isOpen, onClose, items = [], customers = [] }) => {
                             </div>
 
                             {includeCustomerBox && (
-                                <div className="space-y-2 bg-gray-50 dark:bg-gray-700/50 p-3 rounded-lg border border-gray-200 dark:border-gray-600 text-xs">
-                                    <div>
-                                        <span className="text-[11px] text-gray-500 dark:text-gray-400 block mb-1">
-                                            Pre-fill Customer (Optional)
-                                        </span>
-                                        <select
-                                            value={selectedCustomerId}
-                                            onChange={(e) => handleCustomerChange(e.target.value)}
-                                            className="w-full px-2 py-1.5 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-xs"
-                                        >
-                                            <option value="">-- Blank Lines (For Any Customer to Fill) --</option>
-                                            {(customers || []).map(c => (
-                                                <option key={c.id} value={c.id}>{c.name}</option>
-                                            ))}
-                                        </select>
-                                    </div>
-                                    <div>
-                                        <input
-                                            type="text"
-                                            value={customerName}
-                                            onChange={(e) => setCustomerName(e.target.value)}
-                                            placeholder="Customer / School Name (blank for line)"
-                                            className="w-full px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-xs"
-                                        />
-                                    </div>
-                                    <div>
-                                        <input
-                                            type="text"
-                                            value={customerPhone}
-                                            onChange={(e) => setCustomerPhone(e.target.value)}
-                                            placeholder="Contact Person / Mobile Number"
-                                            className="w-full px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-xs"
-                                        />
-                                    </div>
+                                <div className="space-y-1.5 bg-gray-50 dark:bg-gray-700/50 p-2.5 rounded-lg border border-gray-200 dark:border-gray-600">
+                                    <select
+                                        value={selectedCustomerId}
+                                        onChange={(e) => handleCustomerChange(e.target.value)}
+                                        className="w-full px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                                    >
+                                        <option value="">-- Blank Lines (For Any Customer) --</option>
+                                        {(customers || []).map(c => (
+                                            <option key={c.id} value={c.id}>{c.name}</option>
+                                        ))}
+                                    </select>
+                                    <input
+                                        type="text"
+                                        value={customerName}
+                                        onChange={(e) => setCustomerName(e.target.value)}
+                                        placeholder="Customer / School Name"
+                                        className="w-full px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                                    />
+                                    <input
+                                        type="text"
+                                        value={customerPhone}
+                                        onChange={(e) => setCustomerPhone(e.target.value)}
+                                        placeholder="Mobile / Contact No."
+                                        className="w-full px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                                    />
                                 </div>
                             )}
                         </div>
 
-                        {/* Instructions and Terms */}
-                        <div className="space-y-2">
-                            <label className="font-semibold text-gray-800 dark:text-gray-200 block text-xs">
-                                Order Instructions Note
-                            </label>
-                            <textarea
-                                value={instructionsText}
-                                onChange={(e) => setInstructionsText(e.target.value)}
-                                rows="2"
-                                className="w-full px-2.5 py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-xs"
-                            />
-                        </div>
-
-                        {/* Signatures & Footer */}
+                        {/* Terms & Signatures Toggle */}
                         <div className="flex items-center justify-between pt-2 border-t border-gray-200 dark:border-gray-700">
-                            <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">
-                                Include Signatures & Terms Box
+                            <span className="font-semibold text-gray-700 dark:text-gray-300">
+                                Signatures & Terms Box
                             </span>
                             <input
                                 type="checkbox"
@@ -439,597 +993,66 @@ const PriceListModal = ({ isOpen, onClose, items = [], customers = [] }) => {
                         </div>
                     </div>
 
-                    {/* Right: Live Interactive A4 Document Preview */}
-                    <div className={`flex-1 bg-gray-100 dark:bg-gray-900 flex flex-col overflow-hidden print:bg-white print:overflow-visible ${activeTab === 'customization' ? 'hidden sm:flex' : 'flex'}`}>
-                        {/* Preview Topbar Controls */}
-                        <div className="px-6 py-2.5 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between flex-shrink-0 print:hidden">
+                    {/* Right: Live Interactive Document Preview */}
+                    <div className={`flex-1 bg-gray-100 dark:bg-gray-900 flex flex-col overflow-hidden ${activeTab === 'customization' ? 'hidden sm:flex' : 'flex'}`}>
+                        {/* Topbar: Zoom & Info */}
+                        <div className="px-6 py-2 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between flex-shrink-0">
                             <div className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-300 font-medium">
                                 <Eye className="h-4 w-4 text-emerald-600" />
-                                Document Preview ({pages.length} {pages.length === 1 ? 'Page' : 'Pages'})
+                                Exact Document Preview ({pages.length} {pages.length === 1 ? 'Page' : 'Pages'})
                             </div>
 
-                            <div className="flex items-center gap-3">
-                                <div className="flex items-center gap-1 bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
-                                    <button
-                                        onClick={() => setZoomLevel(prev => Math.max(0.5, prev - 0.1))}
-                                        className="p-1 hover:bg-white dark:hover:bg-gray-600 rounded text-gray-600 dark:text-gray-300"
-                                        title="Zoom Out"
-                                    >
-                                        <ZoomOut className="h-3.5 w-3.5" />
-                                    </button>
-                                    <span className="text-xs font-mono px-2 text-gray-700 dark:text-gray-200">
-                                        {Math.round(zoomLevel * 100)}%
-                                    </span>
-                                    <button
-                                        onClick={() => setZoomLevel(prev => Math.min(1.3, prev + 0.1))}
-                                        className="p-1 hover:bg-white dark:hover:bg-gray-600 rounded text-gray-600 dark:text-gray-300"
-                                        title="Zoom In"
-                                    >
-                                        <ZoomIn className="h-3.5 w-3.5" />
-                                    </button>
-                                </div>
+                            <div className="flex items-center gap-2 bg-gray-100 dark:bg-gray-700 rounded-lg p-0.5">
+                                <button
+                                    onClick={() => setZoomLevel(prev => Math.max(0.4, prev - 0.1))}
+                                    className="p-1 hover:bg-white dark:hover:bg-gray-600 rounded text-gray-600 dark:text-gray-300"
+                                    title="Zoom Out"
+                                >
+                                    <ZoomOut className="h-3.5 w-3.5" />
+                                </button>
+                                <span className="text-[11px] font-mono px-2 text-gray-700 dark:text-gray-200">
+                                    {Math.round(zoomLevel * 100)}%
+                                </span>
+                                <button
+                                    onClick={() => setZoomLevel(prev => Math.min(1.2, prev + 0.1))}
+                                    className="p-1 hover:bg-white dark:hover:bg-gray-600 rounded text-gray-600 dark:text-gray-300"
+                                    title="Zoom In"
+                                >
+                                    <ZoomIn className="h-3.5 w-3.5" />
+                                </button>
                             </div>
                         </div>
 
-                        {/* Scrollable Container containing rendered A4 Pages */}
-                        <div className="flex-1 overflow-auto p-6 flex flex-col items-center gap-8 print:p-0 print:overflow-visible print:bg-white print:gap-0">
+                        {/* Visible Scrollable Preview Pane */}
+                        <div className="flex-1 overflow-auto p-4 sm:p-6 flex flex-col items-center">
                             <div
-                                ref={printableContainerRef}
-                                className="flex flex-col items-center gap-8 origin-top transition-transform print:gap-0 print:transform-none"
+                                className="origin-top transition-transform"
                                 style={{ transform: `scale(${zoomLevel})` }}
                             >
-                                {pages.map((page, pageIdx) => {
-                                    // Calculate starting serial index for continuous numbering
-                                    const startingIndex = pages
-                                        .slice(0, pageIdx)
-                                        .reduce((acc, p) => acc + p.items.length, 0);
-
-                                    return (
-                                        <div
-                                            key={pageIdx}
-                                            className="catalog-pdf-page bg-white shadow-xl text-gray-900 border border-gray-300 print:border-none print:shadow-none"
-                                            style={{
-                                                width: '794px',
-                                                height: '1123px',
-                                                maxHeight: '1123px',
-                                                minHeight: '1123px',
-                                                boxSizing: 'border-box',
-                                                padding: '28px 34px',
-                                                display: 'flex',
-                                                flexDirection: 'column',
-                                                justifyContent: 'space-between',
-                                                backgroundColor: '#ffffff',
-                                                color: '#0f172a',
-                                                fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif"
-                                            }}
-                                        >
-                                            {/* Top Section */}
-                                            <div>
-                                                {/* Page 1 Header */}
-                                                {page.isFirstPage ? (
-                                                    <div style={{
-                                                        display: 'flex',
-                                                        justifyContent: 'space-between',
-                                                        alignItems: 'flex-start',
-                                                        borderBottom: '2.5px solid #1e40af',
-                                                        paddingBottom: '12px',
-                                                        marginBottom: '10px'
-                                                    }}>
-                                                        <div style={{ flex: 1, paddingRight: '20px' }}>
-                                                            <h1 style={{
-                                                                fontSize: '22px',
-                                                                fontWeight: '800',
-                                                                color: '#1e40af',
-                                                                margin: '0 0 2px 0',
-                                                                letterSpacing: '-0.2px'
-                                                            }}>
-                                                                {selectedStore.name}
-                                                            </h1>
-                                                            <div style={{
-                                                                fontSize: '10px',
-                                                                color: '#047857',
-                                                                fontWeight: '600',
-                                                                marginBottom: '3px'
-                                                            }}>
-                                                                {selectedStore.tagline}
-                                                            </div>
-                                                            <div style={{
-                                                                fontSize: '10px',
-                                                                color: '#475569',
-                                                                lineHeight: '1.35',
-                                                                maxWidth: '430px'
-                                                            }}>
-                                                                {selectedStore.address}
-                                                            </div>
-                                                            <div style={{
-                                                                fontSize: '10px',
-                                                                fontWeight: '600',
-                                                                color: '#1e293b',
-                                                                marginTop: '4px',
-                                                                display: 'flex',
-                                                                gap: '12px'
-                                                            }}>
-                                                                <span>📞 Mob: {selectedStore.phone}</span>
-                                                                {selectedStore.gstin && (
-                                                                    <span>GSTIN: {selectedStore.gstin}</span>
-                                                                )}
-                                                                {selectedStore.uniqueCode && (
-                                                                    <span>Code: {selectedStore.uniqueCode}</span>
-                                                                )}
-                                                            </div>
-                                                        </div>
-
-                                                        <div style={{
-                                                            textAlign: 'right',
-                                                            display: 'flex',
-                                                            flexDirection: 'column',
-                                                            alignItems: 'flex-end',
-                                                            minWidth: '220px'
-                                                        }}>
-                                                            <div style={{
-                                                                backgroundColor: '#1e40af',
-                                                                color: '#ffffff',
-                                                                padding: '5px 14px',
-                                                                borderRadius: '4px',
-                                                                fontSize: '11px',
-                                                                fontWeight: '700',
-                                                                letterSpacing: '0.4px',
-                                                                textTransform: 'uppercase',
-                                                                marginBottom: '5px'
-                                                            }}>
-                                                                {documentTitle}
-                                                            </div>
-                                                            <div style={{ fontSize: '10px', color: '#475569' }}>
-                                                                Date of Issue: <strong>{format(new Date(), 'dd-MM-yyyy')}</strong>
-                                                            </div>
-                                                            <div style={{ fontSize: '9px', color: '#64748b', marginTop: '2px' }}>
-                                                                Rate Card Valid As Of: {format(new Date(), 'MMMM yyyy')}
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                ) : (
-                                                    /* Running header on page 2+ */
-                                                    <div style={{
-                                                        display: 'flex',
-                                                        justifyContent: 'space-between',
-                                                        alignItems: 'center',
-                                                        borderBottom: '1.5px solid #cbd5e1',
-                                                        paddingBottom: '6px',
-                                                        marginBottom: '10px',
-                                                        fontSize: '10px',
-                                                        color: '#475569'
-                                                    }}>
-                                                        <div style={{ fontWeight: 'bold', color: '#1e40af' }}>
-                                                            {selectedStore.name} • {documentTitle}
-                                                        </div>
-                                                        <div>
-                                                            Date: {format(new Date(), 'dd-MM-yyyy')} | Page {page.pageNumber} of {page.totalPages}
-                                                        </div>
-                                                    </div>
-                                                )}
-
-                                                {/* Customer Order Details Box (on Page 1) */}
-                                                {page.isFirstPage && page.showCustomerBox && (
-                                                    <div style={{
-                                                        border: '1px solid #cbd5e1',
-                                                        borderRadius: '6px',
-                                                        padding: '8px 12px',
-                                                        marginBottom: '8px',
-                                                        backgroundColor: '#f8fafc'
-                                                    }}>
-                                                        <div style={{
-                                                            fontSize: '9.5px',
-                                                            fontWeight: 'bold',
-                                                            color: '#1e40af',
-                                                            textTransform: 'uppercase',
-                                                            marginBottom: '5px',
-                                                            letterSpacing: '0.5px',
-                                                            display: 'flex',
-                                                            justifyContent: 'space-between'
-                                                        }}>
-                                                            <span>Customer Order Details (Please fill in or verify)</span>
-                                                            <span style={{ fontSize: '9px', color: '#64748b', fontWeight: 'normal' }}>
-                                                                Order Reference / PO No: ____________________
-                                                            </span>
-                                                        </div>
-                                                        <div style={{
-                                                            display: 'grid',
-                                                            gridTemplateColumns: '1.4fr 1fr',
-                                                            gap: '5px 16px',
-                                                            fontSize: '10.5px',
-                                                            color: '#1e293b'
-                                                        }}>
-                                                            <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px' }}>
-                                                                <span style={{ fontWeight: 600, color: '#475569', minWidth: '95px' }}>
-                                                                    Customer Name:
-                                                                </span>
-                                                                <span style={{
-                                                                    borderBottom: '1px dotted #94a3b8',
-                                                                    flex: 1,
-                                                                    height: '16px',
-                                                                    display: 'inline-block',
-                                                                    fontWeight: customerName ? '600' : 'normal'
-                                                                }}>
-                                                                    {customerName || ''}
-                                                                </span>
-                                                            </div>
-                                                            <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px' }}>
-                                                                <span style={{ fontWeight: 600, color: '#475569', minWidth: '75px' }}>
-                                                                    Contact No:
-                                                                </span>
-                                                                <span style={{
-                                                                    borderBottom: '1px dotted #94a3b8',
-                                                                    flex: 1,
-                                                                    height: '16px',
-                                                                    display: 'inline-block'
-                                                                }}>
-                                                                    {customerPhone || ''}
-                                                                </span>
-                                                            </div>
-                                                            <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px' }}>
-                                                                <span style={{ fontWeight: 600, color: '#475569', minWidth: '95px' }}>
-                                                                    Delivery Address:
-                                                                </span>
-                                                                <span style={{
-                                                                    borderBottom: '1px dotted #94a3b8',
-                                                                    flex: 1,
-                                                                    height: '16px',
-                                                                    display: 'inline-block'
-                                                                }}>
-                                                                    {customerAddress || ''}
-                                                                </span>
-                                                            </div>
-                                                            <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px' }}>
-                                                                <span style={{ fontWeight: 600, color: '#475569', minWidth: '75px' }}>
-                                                                    Required Date:
-                                                                </span>
-                                                                <span style={{
-                                                                    borderBottom: '1px dotted #94a3b8',
-                                                                    flex: 1,
-                                                                    height: '16px',
-                                                                    display: 'inline-block'
-                                                                }} />
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                )}
-
-                                                {/* Instructions Callout Box (on Page 1) */}
-                                                {page.isFirstPage && page.showInstructions && (
-                                                    <div style={{
-                                                        backgroundColor: '#eff6ff',
-                                                        borderLeft: '3.5px solid #2563eb',
-                                                        borderRadius: '4px',
-                                                        padding: '5px 10px',
-                                                        marginBottom: '8px',
-                                                        fontSize: '9.5px',
-                                                        color: '#1e3a8a',
-                                                        display: 'flex',
-                                                        alignItems: 'center',
-                                                        gap: '6px'
-                                                    }}>
-                                                        <span style={{ fontWeight: 'bold' }}>✍️ How to Order:</span>
-                                                        <span>{instructionsText}</span>
-                                                    </div>
-                                                )}
-
-                                                {/* Items Table */}
-                                                <table style={{
-                                                    width: '100%',
-                                                    borderCollapse: 'collapse',
-                                                    textAlign: 'left'
-                                                }}>
-                                                    <thead>
-                                                        <tr style={{
-                                                            backgroundColor: '#1e3a8a',
-                                                            color: '#ffffff',
-                                                            fontSize: '9.5px',
-                                                            fontWeight: '700',
-                                                            letterSpacing: '0.3px',
-                                                            textTransform: 'uppercase'
-                                                        }}>
-                                                            <th style={{
-                                                                padding: '6px 6px',
-                                                                textAlign: 'center',
-                                                                width: '32px',
-                                                                borderRight: '1px solid #3b82f6'
-                                                            }}>
-                                                                Sr.
-                                                            </th>
-                                                            <th style={{
-                                                                padding: '6px 10px',
-                                                                textAlign: 'left',
-                                                                borderRight: '1px solid #3b82f6'
-                                                            }}>
-                                                                Item Description / Product Name
-                                                            </th>
-                                                            {includeSku && (
-                                                                <th style={{
-                                                                    padding: '6px 8px',
-                                                                    textAlign: 'center',
-                                                                    width: '80px',
-                                                                    borderRight: '1px solid #3b82f6'
-                                                                }}>
-                                                                    SKU / Code
-                                                                </th>
-                                                            )}
-                                                            {includeTaxRate && (
-                                                                <th style={{
-                                                                    padding: '6px 6px',
-                                                                    textAlign: 'center',
-                                                                    width: '55px',
-                                                                    borderRight: '1px solid #3b82f6'
-                                                                }}>
-                                                                    Tax %
-                                                                </th>
-                                                            )}
-                                                            {includePrice && (
-                                                                <th style={{
-                                                                    padding: '6px 10px',
-                                                                    textAlign: 'right',
-                                                                    width: '90px',
-                                                                    borderRight: '1px solid #3b82f6'
-                                                                }}>
-                                                                    Price (₹)
-                                                                </th>
-                                                            )}
-                                                            {includeEmptyQty && (
-                                                                <th style={{
-                                                                    padding: '6px 8px',
-                                                                    textAlign: 'center',
-                                                                    width: '105px',
-                                                                    backgroundColor: '#1d4ed8',
-                                                                    color: '#ffffff',
-                                                                    borderRight: includeRemarks ? '1px solid #3b82f6' : 'none'
-                                                                }}>
-                                                                    Order Qty <span style={{ fontSize: '8px', opacity: 0.9 }}>[Fill]</span>
-                                                                </th>
-                                                            )}
-                                                            {includeRemarks && (
-                                                                <th style={{
-                                                                    padding: '6px 8px',
-                                                                    textAlign: 'left',
-                                                                    width: '110px'
-                                                                }}>
-                                                                    Customer Remarks
-                                                                </th>
-                                                            )}
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody>
-                                                        {page.items.map((item, idx) => {
-                                                            const itemSr = startingIndex + idx + 1;
-                                                            const isEven = idx % 2 === 0;
-
-                                                            return (
-                                                                <tr
-                                                                    key={item.id || idx}
-                                                                    style={{
-                                                                        backgroundColor: isEven ? '#ffffff' : '#f8fafc',
-                                                                        borderBottom: '1px solid #e2e8f0',
-                                                                        fontSize: '10px'
-                                                                    }}
-                                                                >
-                                                                    <td style={{
-                                                                        padding: '4px 6px',
-                                                                        textAlign: 'center',
-                                                                        color: '#64748b',
-                                                                        fontFamily: 'monospace',
-                                                                        fontSize: '9.5px',
-                                                                        borderRight: '1px solid #f1f5f9'
-                                                                    }}>
-                                                                        {itemSr}
-                                                                    </td>
-                                                                    <td style={{
-                                                                        padding: '4px 10px',
-                                                                        color: '#0f172a',
-                                                                        fontWeight: '500',
-                                                                        borderRight: '1px solid #f1f5f9'
-                                                                    }}>
-                                                                        <div style={{ fontWeight: '600' }}>{item.name}</div>
-                                                                        {item.description && (
-                                                                            <div style={{
-                                                                                fontSize: '8.5px',
-                                                                                color: '#64748b',
-                                                                                marginTop: '1px',
-                                                                                lineHeight: '1.2'
-                                                                            }}>
-                                                                                {item.description}
-                                                                            </div>
-                                                                        )}
-                                                                    </td>
-                                                                    {includeSku && (
-                                                                        <td style={{
-                                                                            padding: '4px 8px',
-                                                                            textAlign: 'center',
-                                                                            color: '#475569',
-                                                                            fontSize: '9px',
-                                                                            fontFamily: 'monospace',
-                                                                            borderRight: '1px solid #f1f5f9'
-                                                                        }}>
-                                                                            {item.sku || '-'}
-                                                                        </td>
-                                                                    )}
-                                                                    {includeTaxRate && (
-                                                                        <td style={{
-                                                                            padding: '4px 6px',
-                                                                            textAlign: 'center',
-                                                                            color: '#475569',
-                                                                            fontSize: '9.5px',
-                                                                            borderRight: '1px solid #f1f5f9'
-                                                                        }}>
-                                                                            {item.taxRate ? `${item.taxRate}%` : '0%'}
-                                                                        </td>
-                                                                    )}
-                                                                    {includePrice && (
-                                                                        <td style={{
-                                                                            padding: '4px 10px',
-                                                                            textAlign: 'right',
-                                                                            color: '#0f172a',
-                                                                            fontWeight: '700',
-                                                                            fontSize: '10.5px',
-                                                                            borderRight: '1px solid #f1f5f9'
-                                                                        }}>
-                                                                            ₹{parseFloat(item.price || 0).toFixed(2)}
-                                                                        </td>
-                                                                    )}
-                                                                    {includeEmptyQty && (
-                                                                        <td style={{
-                                                                            padding: '3px 8px',
-                                                                            textAlign: 'center',
-                                                                            borderRight: includeRemarks ? '1px solid #f1f5f9' : 'none'
-                                                                        }}>
-                                                                            {/* Customer fill-in empty box */}
-                                                                            <div style={{
-                                                                                height: '22px',
-                                                                                border: '1.5px dashed #94a3b8',
-                                                                                borderRadius: '4px',
-                                                                                backgroundColor: '#ffffff',
-                                                                                display: 'flex',
-                                                                                alignItems: 'center',
-                                                                                justifyContent: 'center'
-                                                                            }} />
-                                                                        </td>
-                                                                    )}
-                                                                    {includeRemarks && (
-                                                                        <td style={{ padding: '3px 8px' }}>
-                                                                            <div style={{
-                                                                                borderBottom: '1px dotted #cbd5e1',
-                                                                                height: '18px'
-                                                                            }} />
-                                                                        </td>
-                                                                    )}
-                                                                </tr>
-                                                            );
-                                                        })}
-                                                    </tbody>
-                                                </table>
-                                            </div>
-
-                                            {/* Bottom Section */}
-                                            <div style={{ marginTop: 'auto', paddingTop: '8px' }}>
-                                                {/* Terms & Signatures (shown on the last page) */}
-                                                {page.isLastPage && page.showSignatures && (
-                                                    <div style={{
-                                                        borderTop: '1px solid #cbd5e1',
-                                                        paddingTop: '8px',
-                                                        marginBottom: '10px'
-                                                    }}>
-                                                        {/* Terms & Instructions Grid */}
-                                                        <div style={{
-                                                            display: 'grid',
-                                                            gridTemplateColumns: '1.2fr 1fr',
-                                                            gap: '12px',
-                                                            marginBottom: '12px',
-                                                            fontSize: '9px',
-                                                            color: '#475569'
-                                                        }}>
-                                                            <div>
-                                                                <div style={{
-                                                                    fontWeight: 'bold',
-                                                                    color: '#1e40af',
-                                                                    marginBottom: '2px',
-                                                                    textTransform: 'uppercase',
-                                                                    fontSize: '8.5px'
-                                                                }}>
-                                                                    Terms & Conditions:
-                                                                </div>
-                                                                <div style={{ lineHeight: '1.35' }}>
-                                                                    {termsText}
-                                                                </div>
-                                                            </div>
-                                                            <div>
-                                                                <div style={{
-                                                                    fontWeight: 'bold',
-                                                                    color: '#1e40af',
-                                                                    marginBottom: '2px',
-                                                                    textTransform: 'uppercase',
-                                                                    fontSize: '8.5px'
-                                                                }}>
-                                                                    Contact & WhatsApp Order:
-                                                                </div>
-                                                                <div style={{ lineHeight: '1.35' }}>
-                                                                    Send photo of this filled sheet to <strong>{selectedStore.phone}</strong>. We will confirm your order and issue your official tax invoice immediately.
-                                                                </div>
-                                                            </div>
-                                                        </div>
-
-                                                        {/* Signatures & Stamps */}
-                                                        <div style={{
-                                                            display: 'flex',
-                                                            justifyContent: 'space-between',
-                                                            alignItems: 'flex-end',
-                                                            padding: '0 8px 4px 8px'
-                                                        }}>
-                                                            <div style={{ textAlign: 'center', width: '220px' }}>
-                                                                <div style={{ height: '36px' }} />
-                                                                <div style={{
-                                                                    borderTop: '1px solid #0f172a',
-                                                                    paddingTop: '3px',
-                                                                    fontWeight: 'bold',
-                                                                    fontSize: '9.5px',
-                                                                    color: '#0f172a'
-                                                                }}>
-                                                                    Customer / Purchaser Signature
-                                                                </div>
-                                                                <div style={{ fontSize: '8.5px', color: '#64748b' }}>
-                                                                    With Official Seal & Date
-                                                                </div>
-                                                            </div>
-                                                            <div style={{ textAlign: 'center', width: '240px' }}>
-                                                                <div style={{
-                                                                    fontSize: '9.5px',
-                                                                    fontWeight: 'bold',
-                                                                    color: '#1e40af',
-                                                                    marginBottom: '32px'
-                                                                }}>
-                                                                    For {selectedStore.name}
-                                                                </div>
-                                                                <div style={{
-                                                                    borderTop: '1px solid #0f172a',
-                                                                    paddingTop: '3px',
-                                                                    fontWeight: 'bold',
-                                                                    fontSize: '9.5px',
-                                                                    color: '#0f172a'
-                                                                }}>
-                                                                    Authorized Signatory
-                                                                </div>
-                                                                <div style={{ fontSize: '8.5px', color: '#64748b' }}>
-                                                                    Proprietor / Sales Manager
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                )}
-
-                                                {/* Page Bottom Running Footer */}
-                                                <div style={{
-                                                    borderTop: '1px solid #e2e8f0',
-                                                    paddingTop: '4px',
-                                                    display: 'flex',
-                                                    justifyContent: 'space-between',
-                                                    alignItems: 'center',
-                                                    fontSize: '8.5px',
-                                                    color: '#94a3b8'
-                                                }}>
-                                                    <div>
-                                                        <strong>{selectedStore.name}</strong> • Phone: {selectedStore.phone} • Chh. Sambhaji Nagar
-                                                    </div>
-                                                    <div>
-                                                        Page {page.pageNumber} of {page.totalPages}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    );
-                                })}
+                                {pages.map((page, pageIdx) => renderPageContent(page, pageIdx, true))}
                             </div>
                         </div>
                     </div>
                 </div>
 
-                {/* Modal Footer Actions */}
-                <div className="px-6 py-3.5 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50 flex flex-col sm:flex-row items-center justify-between gap-3 flex-shrink-0 print:hidden">
+                {/* Hidden Unscaled 1:1 Export Container (Ensures 100% pixel-perfect PDF & Print) */}
+                <div
+                    ref={exportContainerRef}
+                    style={{
+                        position: 'fixed',
+                        left: '-9999px',
+                        top: 0,
+                        width: '794px',
+                        backgroundColor: '#ffffff',
+                        zIndex: -1,
+                        pointerEvents: 'none'
+                    }}
+                >
+                    {pages.map((page, pageIdx) => renderPageContent(page, pageIdx, false))}
+                </div>
+
+                {/* Modal Footer Action Buttons */}
+                <div className="px-6 py-3 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50 flex flex-col sm:flex-row items-center justify-between gap-3 flex-shrink-0">
                     <div className="text-xs text-gray-500 dark:text-gray-400">
                         {isGenerating ? (
                             <span className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400 font-medium">
@@ -1038,7 +1061,7 @@ const PriceListModal = ({ isOpen, onClose, items = [], customers = [] }) => {
                             </span>
                         ) : (
                             <span>
-                                Ready to download: <strong>{processedItems.length} products</strong> formatted into <strong>{pages.length} A4 {pages.length === 1 ? 'page' : 'pages'}</strong>.
+                                Total <strong>{processedItems.length} products</strong> across <strong>{pages.length} A4 {pages.length === 1 ? 'page' : 'pages'}</strong>.
                             </span>
                         )}
                     </div>
@@ -1057,7 +1080,7 @@ const PriceListModal = ({ isOpen, onClose, items = [], customers = [] }) => {
                             onClick={handlePrint}
                             disabled={isGenerating}
                             className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors flex items-center gap-2 text-xs font-medium"
-                            title="Direct print to printer or browser PDF"
+                            title="Direct print isolated price list to physical printer or browser PDF"
                         >
                             <Printer className="h-4 w-4" />
                             Print
