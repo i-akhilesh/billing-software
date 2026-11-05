@@ -4,9 +4,22 @@
 @media print {
   @page {
     margin: 0;
+    size: A4 portrait;
   }
   body {
     margin: 0;
-    padding: 1cm;
+    padding: 0;
+    background: #ffffff !important;
+  }
+  .catalog-pdf-page {
+    page-break-after: always !important;
+    break-after: page !important;
+    box-shadow: none !important;
+    border: none !important;
+    margin: 0 auto !important;
+  }
+  .catalog-pdf-page:last-child {
+    page-break-after: avoid !important;
+    break-after: avoid !important;
   }
 }

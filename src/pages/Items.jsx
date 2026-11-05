@@ -1,13 +1,15 @@
 import { useState } from 'react';
 import { useData } from '../context/DataContext';
 import { Link } from 'react-router-dom';
-import { Plus, Search, Edit2, Trash2, Package, AlertTriangle } from 'lucide-react';
+import { Plus, Search, Edit2, Trash2, Package, AlertTriangle, FileDown } from 'lucide-react';
 import ItemStats from '../components/ItemStats';
+import PriceListModal from '../components/PriceListModal';
 
 const Items = () => {
-    const { items, deleteItem, loading } = useData();
+    const { items, customers, deleteItem, loading } = useData();
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState('all');
+    const [isPriceListOpen, setIsPriceListOpen] = useState(false);
 
     const filteredItems = items.filter(i => {
         const nameMatch = (i.name || '').toLowerCase().includes(searchTerm.toLowerCase());
@@ -29,13 +31,23 @@ const Items = () => {
         <div>
             <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
                 <h1 className="text-2xl font-bold text-gray-800 dark:text-white">Items / Products</h1>
-                <Link
-                    to="/items/new"
-                    className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 flex items-center gap-2"
-                >
-                    <Plus className="h-4 w-4" />
-                    Add Item
-                </Link>
+                <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
+                    <button
+                        onClick={() => setIsPriceListOpen(true)}
+                        className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-md flex items-center gap-2 text-sm font-medium shadow-sm transition-colors"
+                        title="Download professional PDF price list with blank quantity column for customers to fill out"
+                    >
+                        <FileDown className="h-4 w-4" />
+                        Download Price List PDF
+                    </button>
+                    <Link
+                        to="/items/new"
+                        className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 flex items-center gap-2 text-sm font-medium"
+                    >
+                        <Plus className="h-4 w-4" />
+                        Add Item
+                    </Link>
+                </div>
             </div>
 
             <ItemStats items={items} />
@@ -143,6 +155,13 @@ const Items = () => {
                     </table>
                 </div>
             </div>
+
+            <PriceListModal
+                isOpen={isPriceListOpen}
+                onClose={() => setIsPriceListOpen(false)}
+                items={items}
+                customers={customers}
+            />
         </div>
     );
 };

@@ -1,14 +1,16 @@
 import { useState } from 'react';
 import { useData } from '../context/DataContext';
-import { Search, Package, Plus, AlertTriangle, X } from 'lucide-react';
+import { Search, Package, Plus, AlertTriangle, X, FileDown } from 'lucide-react';
 import { useToast } from '../context/ToastContext';
 import InventoryStats from '../components/InventoryStats';
+import PriceListModal from '../components/PriceListModal';
 
 const Inventory = () => {
-    const { items, updateItemStock, loading } = useData();
+    const { items, customers, updateItemStock, loading } = useData();
     const { addToast } = useToast();
     const [searchTerm, setSearchTerm] = useState('');
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isPriceListOpen, setIsPriceListOpen] = useState(false);
     const [selectedItem, setSelectedItem] = useState(null);
     const [stockToAdd, setStockToAdd] = useState('');
     const [submitting, setSubmitting] = useState(false);
@@ -56,6 +58,14 @@ const Inventory = () => {
         <div>
             <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
                 <h1 className="text-2xl font-bold text-gray-800 dark:text-white">Inventory Management</h1>
+                <button
+                    onClick={() => setIsPriceListOpen(true)}
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-md flex items-center gap-2 text-sm font-medium shadow-sm transition-colors"
+                    title="Download professional PDF price list with blank quantity column for customers to fill out"
+                >
+                    <FileDown className="h-4 w-4" />
+                    Download Price List PDF
+                </button>
             </div>
 
             <InventoryStats items={items} />
@@ -201,6 +211,13 @@ const Inventory = () => {
                     </div>
                 </div>
             )}
+
+            <PriceListModal
+                isOpen={isPriceListOpen}
+                onClose={() => setIsPriceListOpen(false)}
+                items={items}
+                customers={customers}
+            />
         </div>
     );
 };
